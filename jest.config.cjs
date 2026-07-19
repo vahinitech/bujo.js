@@ -1,11 +1,8 @@
-// jest.config.js
+// jest.config.cjs
 module.exports = {
   transform: {
     '^.+\\.js$': 'babel-jest',
   },
-  transformIgnorePatterns: [
-    '/node_modules/(?!(axios|openai)/)', // Transform ESM dependencies
-  ],
   moduleNameMapper: {
     '\\.(png|jpg|jpeg|gif)$': '<rootDir>/tests/__mocks__/fileMock.js',
   },
@@ -14,5 +11,6 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.js',
   ],
+  coveragePathIgnorePatterns: ['\\.test\\.js$'],
   coverageReporters: ['text', 'lcov'],
 };

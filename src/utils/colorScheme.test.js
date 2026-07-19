@@ -1,23 +1,24 @@
 // src/utils/colorScheme.test.js
 
-import { applyColorScheme } from '../../src/utils/colorScheme';
+import { applyColorScheme, SCHEMES } from '../../src/utils/colorScheme.js';
 
 describe('applyColorScheme', () => {
-    test('should return color scheme for "color" mode', () => {
+    test('should return the refined color scheme for "color" mode', () => {
         const result = applyColorScheme({}, 'color');
-        expect(result).toEqual({
-            textColor: '#4A90E2',
-            lineColor: '#F5A623',
-            highlightColor: '#7ED321',
-        });
+        expect(result).toMatchObject(SCHEMES.color);
+        expect(result.textColor).toBe(SCHEMES.color.ink);
+        expect(result.lineColor).toBe(SCHEMES.color.line);
+        expect(result.highlightColor).toBe(SCHEMES.color.accent);
     });
 
     test('should return monochrome scheme for non-color mode', () => {
         const result = applyColorScheme({}, 'monochrome');
-        expect(result).toEqual({
-            textColor: '#000000',
-            lineColor: '#333333',
-            highlightColor: '#666666',
-        });
+        expect(result).toMatchObject(SCHEMES.monochrome);
+        expect(result.textColor).toBe(SCHEMES.monochrome.ink);
+    });
+
+    test('should fall back to monochrome for unknown schemes', () => {
+        const result = applyColorScheme({}, 'neon');
+        expect(result).toMatchObject(SCHEMES.monochrome);
     });
 });

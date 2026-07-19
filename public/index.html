@@ -1,31 +1,80 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>bujo.js Demo</title>
+  <title>bujo.js — Bullet Journal PDF Generator</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "jspdf": "https://cdn.jsdelivr.net/npm/jspdf@4/dist/jspdf.es.min.js"
+      }
+    }
+  </script>
 </head>
 <body>
+  <main class="card">
+    <p class="kicker">bujo.js</p>
+    <h1>Bullet Journal PDF Generator</h1>
+    <p class="lede">
+      Generate a complete undated bullet journal — cover, index, future log,
+      milestones, year at a glance and twelve monthly sections — as a
+      print-ready PDF.
+    </p>
 
-  <h1>bujo.js Interactive Demo</h1>
+    <form id="generator">
+      <label>
+        Journal title
+        <input id="title" type="text" value="My Bullet Journal" maxlength="60">
+      </label>
 
-  <div id="calendar" class="calendar-container"></div>
-  <div id="habitTrackerCanvas" class="habit-tracker"></div>
-  <div id="editor" class="text-editor"></div>
+      <div class="row">
+        <label>
+          Paper size
+          <select id="paperSize">
+            <option value="A3">A3 · 297 × 420 mm</option>
+            <option value="A4" selected>A4 · 210 × 297 mm</option>
+            <option value="A5">A5 · 148 × 210 mm</option>
+            <option value="A6">A6 · 105 × 148 mm</option>
+          </select>
+        </label>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@5.3.1/main.min.js"></script>
-  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-  <script src="https://cdn.interactjs.io/v1.10.11/interact.min.js"></script>
+        <label>
+          Color scheme
+          <select id="colorScheme">
+            <option value="color" selected>Color</option>
+            <option value="monochrome">Monochrome</option>
+          </select>
+        </label>
+      </div>
 
-  <script>
-    const journal = new BulletJournal('Interactive Journal Demo');
-    journal.initCalendar(document.getElementById('calendar'));
-    journal.initTextEditor('#editor');
-    journal.addHabitTracker(document.getElementById('habitTrackerCanvas'), ['Mon', 'Tue', 'Wed'], [1, 2, 3]);
+      <button type="submit">Download PDF</button>
+      <p id="status" role="status"></p>
+    </form>
+  </main>
+
+  <script type="module">
+    import { BulletJournal } from '../src/bujo.js';
+
+    const form = document.getElementById('generator');
+    const status = document.getElementById('status');
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const title = document.getElementById('title').value.trim() || 'My Bullet Journal';
+      const paperSize = document.getElementById('paperSize').value;
+      const colorScheme = document.getElementById('colorScheme').value;
+
+      status.textContent = 'Generating…';
+      try {
+        const journal = new BulletJournal(title, colorScheme);
+        journal.createBulletJournalBook(paperSize);
+        status.textContent = `Done — ${journal.getExpectedPageCount()} pages.`;
+      } catch (error) {
+        status.textContent = `Failed: ${error.message}`;
+      }
+    });
   </script>
 </body>
 </html>

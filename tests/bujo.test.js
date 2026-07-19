@@ -1,312 +1,228 @@
-import { BulletJournal } from '../src/bujo';
-import jsPDF from 'jspdf';
-import { applyColorScheme } from '../src/utils/colorScheme';
+import { BulletJournal, PAPER_SIZES } from '../src/bujo.js';
+import { jsPDF } from 'jspdf';
+import { applyColorScheme } from '../src/utils/colorScheme.js';
 
-// Mocking jsPDF to prevent actual PDF file creation during tests
+// Mock jsPDF so no real PDF is rendered during tests.
 jest.mock('jspdf', () => {
-    const mJsPDF = jest.fn().mockImplementation(() => ({
+    const makeDoc = () => ({
         addPage: jest.fn(),
+        setFont: jest.fn(),
         setFontSize: jest.fn(),
+        setCharSpace: jest.fn(),
         text: jest.fn(),
         circle: jest.fn(),
         line: jest.fn(),
+        rect: jest.fn(),
+        roundedRect: jest.fn(),
         addImage: jest.fn(),
         internal: { pageSize: { width: 210, height: 297 } },
         save: jest.fn(),
         setTextColor: jest.fn(),
         setDrawColor: jest.fn(),
-    }));
-    return mJsPDF;
+        setFillColor: jest.fn(),
+        setLineWidth: jest.fn()
+    });
+    return { jsPDF: jest.fn().mockImplementation(makeDoc) };
 });
 
-// Mock applyColorScheme for verifying color application
-jest.mock('../src/utils/colorScheme', () => ({
-    applyColorScheme: jest.fn(() => ({
-        textColor: '#000000',
-        lineColor: '#333333',
-    }))
-}));
+const A4 = { width: 210, height: 297 };
 
-describe('BulletJournal PDF Generation with Illustrations', () => {
+describe('BulletJournal PDF generation', () => {
     let journal;
     let doc;
 
     beforeEach(() => {
-        journal = new BulletJournal('Test Journal', 'monochrome'); // Explicitly set to 'monochrome' for test
+        jest.clearAllMocks();
+        journal = new BulletJournal('Test Journal', 'monochrome');
         doc = new jsPDF();
-        jest.clearAllMocks(); // Clear all previous mock data
     });
 
-    // Test constructor defaults
+    // Constructor defaults
     test('should set default values if no title or color scheme is provided', () => {
         const defaultJournal = new BulletJournal();
         expect(defaultJournal.title).toBe('My Bullet Journal');
         expect(defaultJournal.colorScheme).toBe('color');
     });
 
-    // Test applyColors functionality
     test('should apply colors using applyColorScheme with monochrome', () => {
         journal.applyColors(doc);
-        expect(applyColorScheme).toHaveBeenCalledWith(doc, 'monochrome'); // Ensures 'monochrome' scheme
-        expect(doc.setTextColor).toHaveBeenCalledWith('#000000');
-        expect(doc.setDrawColor).toHaveBeenCalledWith('#333333');
+        const expected = applyColorScheme(doc, 'monochrome');
+        expect(doc.setTextColor).toHaveBeenCalledWith(expected.textColor);
+        expect(doc.setDrawColor).toHaveBeenCalledWith(expected.lineColor);
+        expect(journal.colors.ink).toBe(expected.ink);
     });
 
-    // Test addIllustrationPage with invalid doc parameter
-    test('should throw an error if doc is missing in addIllustrationPage', () => {
-        expect(() => journal.addIllustrationPage(null, 'dailyPlanner')).toThrow('Invalid document instance');
+    // Paper size handling
+    test('exposes metric paper sizes', () => {
+        expect(PAPER_SIZES.A4).toEqual({ width: 210, height: 297 });
+        expect(PAPER_SIZES.A6).toEqual({ width: 105, height: 148 });
     });
 
-    // Test to ensure flexible tracking page is added without errors
-    test('should add flexible tracking page without errors', () => {
+    test('should throw error for unsupported paper size in createBulletJournalBook', () => {
+        expect(() => journal.createBulletJournalBook('InvalidSize', doc)).toThrow('Unsupported paper size');
+        expect(() => journal.generate('Letter', doc)).toThrow('Unsupported paper size');
+    });
+
+    // Legacy inch dimensions keep working
+    test('accepts legacy inch-based paper dimensions', () => {
+        expect(() => journal.addDailyPlanningPage(doc, { width: 8.27, height: 11.69 })).not.toThrow();
+        expect(() => journal.addWeeklyOverviewPage(doc, { width: 8.27, height: 11.69 })).not.toThrow();
         expect(() => journal.addFlexibleTrackingPage(doc, { width: 8.27, height: 11.69 })).not.toThrow();
     });
 
-    // Test to verify habit tracker days are added correctly
-    test('should add habit tracker days correctly in flexible tracking page', () => {
-        jest.spyOn(doc, 'text');
-
-        journal.addFlexibleTrackingPage(doc, { width: 8.27, height: 11.69 });
-
-        const days = ["S", "M", "T", "W", "T", "F", "S"];
-        days.forEach(day => {
-            expect(doc.text).toHaveBeenCalledWith(day, expect.any(Number), expect.any(Number));
-        });
+    // Cover page
+    test('cover page draws on the current page without adding a new one', () => {
+        journal.addCoverPage(doc, A4);
+        expect(doc.addPage).not.toHaveBeenCalled();
+        expect(doc.text).toHaveBeenCalledWith(
+            'Test Journal',
+            expect.any(Number),
+            expect.any(Number),
+            expect.objectContaining({ align: 'center' })
+        );
     });
 
-    // Test to ensure goal-setting section circles are added correctly
-    test('should add goal-setting circles in flexible tracking page', () => {
-        jest.spyOn(doc, 'circle');
-
-        journal.addFlexibleTrackingPage(doc, { width: 8.27, height: 11.69 });
-
-        // Expect 5 circles for goal-setting section
-        // Verify 5 goal-setting circles at specific coordinates (y >= 105)
-        const goalSettingCalls = doc.circle.mock.calls.filter(call => call[2] === 2 && call[1] >= 105);
-        expect(goalSettingCalls).toHaveLength(5);  // Confirms 5 circles for goal-setting section
-
-        expect(doc.text).toHaveBeenCalledWith("Goal-Setting", 10, 100); // Text for goal-setting section
+    // Index page
+    test('index page lists every generated section with its page number', () => {
+        journal.addIndexPage(doc, A4);
+        expect(doc.addPage).toHaveBeenCalledTimes(1);
+        expect(doc.text).toHaveBeenCalledWith('Future Log', expect.any(Number), expect.any(Number));
+        expect(doc.text).toHaveBeenCalledWith('Month 12', expect.any(Number), expect.any(Number));
     });
 
-    // Test to ensure flexible tracking space line is drawn
-    test('should add flexible tracking space line in flexible tracking page', () => {
-        jest.spyOn(doc, 'line');
-
-        journal.addFlexibleTrackingPage(doc, { width: 8.27, height: 11.69 });
-
-        expect(doc.line).toHaveBeenCalledWith(10, 155, 190, 155); // Line for flexible tracking space
+    // Dotted grid
+    test('should throw an error if doc is missing in addDottedGridPage', () => {
+        expect(() => journal.addDottedGridPage(null, 5, A4)).toThrow('Invalid document instance');
     });
 
-    // Test for handling missing paper dimensions
-    test('should throw error if paperDimensions is missing in addFlexibleTrackingPage', () => {
-        expect(() => journal.addFlexibleTrackingPage(doc, null)).toThrow('Invalid paper dimensions');
-    });
-
-    // Test for large dimensions and spacing for edge case
-    test('should handle large dimensions without issues in addFlexibleTrackingPage', () => {
-        expect(() => journal.addFlexibleTrackingPage(doc, { width: 50, height: 50 })).not.toThrow();
-    });
-
-    // Test addDottedGridPage for valid and edge cases
     test('should throw an error for invalid dotSpacing in addDottedGridPage', () => {
-        expect(() => journal.addDottedGridPage(doc, -1, { width: 8.27, height: 11.69 })).toThrow('Invalid dot spacing');
-    });
-    test('should throw an error if paperDimensions is missing in addDottedGridPage', () => {
-        expect(() => journal.addDottedGridPage(doc, 0.2, null)).toThrow('Invalid paper dimensions');
+        expect(() => journal.addDottedGridPage(doc, -1, A4)).toThrow('Invalid dot spacing');
+        expect(() => journal.addDottedGridPage(doc, 0, A4)).toThrow('Invalid dot spacing');
     });
 
-    // Test createBulletJournalBook with unsupported paper size
-    test('should throw error for unsupported paper size in createBulletJournalBook', () => {
-        expect(() => journal.createBulletJournalBook('InvalidSize', doc)).toThrow('Unsupported paper size');
+    test('should throw an error if paperDimensions is null in addDottedGridPage', () => {
+        expect(() => journal.addDottedGridPage(doc, 5, null)).toThrow('Invalid paper dimensions');
     });
 
-    // Test createBulletJournalBook for proper invocation of page methods and color scheme
-    test('should call each page method in createBulletJournalBook', () => {
-        jest.spyOn(journal, 'applyColors');
-        jest.spyOn(journal, 'addDottedGridPage');
-        jest.spyOn(journal, 'addDailyPlanningPage');
-        jest.spyOn(journal, 'addWeeklyOverviewPage');
-        jest.spyOn(journal, 'addFlexibleTrackingPage');
-
-        journal.createBulletJournalBook('A4', doc);
-
-        expect(journal.applyColors).toHaveBeenCalledTimes(1);
-        expect(journal.addDottedGridPage).toHaveBeenCalledWith(doc, 0.2, expect.any(Object));
-        expect(journal.addDailyPlanningPage).toHaveBeenCalledWith(doc, expect.any(Object));
-        expect(journal.addWeeklyOverviewPage).toHaveBeenCalledWith(doc, expect.any(Object));
-        expect(journal.addFlexibleTrackingPage).toHaveBeenCalledWith(doc, expect.any(Object));
+    test('dot grid covers the full content area', () => {
+        journal.addDottedGridPage(doc, 5, A4);
+        // A4 content area is roughly 184 × 271 mm → a 5 mm grid needs
+        // 37 × ~53 dots; assert we drew a full-page field, not a corner.
+        expect(doc.circle.mock.calls.length).toBeGreaterThan(1500);
     });
 
-    test('should apply colors in createBulletJournalBook only once', () => {
-        jest.spyOn(journal, 'applyColors');
-
-        journal.createBulletJournalBook('A4', doc);
-
-        expect(journal.applyColors).toHaveBeenCalledTimes(1); // Ensure single call to applyColors
+    test('legacy inch dot spacing is converted to millimetres', () => {
+        journal.addDottedGridPage(doc, 0.2, A4); // 0.2 in → 5.08 mm
+        expect(doc.circle.mock.calls.length).toBeGreaterThan(1400);
     });
 
-    // Test addIllustrationPage with valid parameters
-    test('should add illustration page without errors', () => {
-        expect(() => journal.addIllustrationPage(doc, 'flexibleTracking')).not.toThrow();
-        expect(doc.addImage).toHaveBeenCalledWith(expect.stringContaining('flexibleTracking.png'), 'PNG', expect.any(Number), expect.any(Number), expect.any(Number), expect.any(Number));
-    });
-
-    // Positive Tests
-    test('should create a Dotted Grid PDF without errors', () => {
-        expect(() => journal.addDottedGridPage(doc, 0.2, { width: 8.27, height: 11.69 })).not.toThrow();
-    });
-
-    test('should add multiple dots within large page dimensions in addDottedGridPage', () => {
-        journal.addDottedGridPage(doc, 1, { width: 20, height: 20 });
-        expect(doc.circle).toHaveBeenCalled(); // Ensures dots are added within the larger space
-    });
-
-    test('should create a Daily Planning PDF without errors', () => {
-        expect(() => journal.addDailyPlanningPage(doc, { width: 8.27, height: 11.69 })).not.toThrow();
-    });
-
-    test('should add daily planning elements including all text and circles', () => {
-        journal.addDailyPlanningPage(doc, { width: 8.27, height: 11.69 });
-        expect(doc.text).toHaveBeenCalledWith("Daily Planner", expect.any(Number), expect.any(Number), null, null, 'center');
-        expect(doc.text).toHaveBeenCalledWith("Morning", 10, 40);
-        expect(doc.text).toHaveBeenCalledWith("Afternoon", 10, 80);
-        expect(doc.text).toHaveBeenCalledWith("Evening", 10, 120);
-        expect(doc.circle).toHaveBeenCalledTimes(13); // 10 To-Do + 3 Priority circles
-    });
-
-    test('should add weekly overview days and goal circles', () => {
-        journal.addWeeklyOverviewPage(doc, { width: 8.27, height: 11.69 });
-
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        days.forEach(day => {
-            expect(doc.text).toHaveBeenCalledWith(day, expect.any(Number), expect.any(Number));
+    // Daily plan
+    test('daily plan renders time blocks, priorities and to-dos', () => {
+        journal.addDailyPlanningPage(doc, A4);
+        const drawn = doc.text.mock.calls.map((c) => String(c[0]).toUpperCase());
+        ['MORNING', 'AFTERNOON', 'EVENING', 'TOP PRIORITIES', 'TO-DO', 'NOTES'].forEach((label) => {
+            expect(drawn).toContain(label);
         });
-
-        expect(doc.text).toHaveBeenCalledWith("Goals", 10, 140); // Text for goals section
-        expect(doc.circle).toHaveBeenCalledTimes(5); // 5 circles for Goals
+        expect(doc.rect).toHaveBeenCalled(); // checkboxes
     });
 
-    test('should add flexible tracking elements including habit tracker and goals', () => {
-        journal.addFlexibleTrackingPage(doc, { width: 8.27, height: 11.69 });
-        const days = ["S", "M", "T", "W", "T", "F", "S"];
-        days.forEach(day => {
-            expect(doc.text).toHaveBeenCalledWith(day, expect.any(Number), expect.any(Number));
-        });
-        expect(doc.circle).toHaveBeenCalled(); // Habit tracker circles
-        expect(doc.text).toHaveBeenCalledWith("Goal-Setting", 10, 100);
+    test('should throw error if paperDimensions is missing in addDailyPlanningPage', () => {
+        journal._paper = null;
+        expect(() => journal.addDailyPlanningPage(doc, null)).toThrow('Invalid paper dimensions');
     });
 
-    test('should create a complete Bullet Journal Book PDF without errors', () => {
-        expect(() => journal.createBulletJournalBook('A4')).not.toThrow();
-    });
-
-    test('should generate journal book for A3 size without errors', () => {
-        expect(() => journal.createBulletJournalBook('A3', doc)).not.toThrow();
-    });
-
-    test('should generate journal book for A5 size without errors', () => {
-        expect(() => journal.createBulletJournalBook('A5', doc)).not.toThrow();
-    });
-
-    test('should call save with the correct filename in createBulletJournalBook', () => {
-        const saveSpy = jest.spyOn(doc, 'save');
-        journal.createBulletJournalBook('A4', doc);
-        const expectedFilename = `${journal.title.replace(/\s+/g, '_').toLowerCase()}_journal_book.pdf`;
-        expect(saveSpy).toHaveBeenCalledWith(expectedFilename);
-        saveSpy.mockRestore();
-    });
-
-    // Negative Tests
-    test('should throw error for unsupported paper size', () => {
-        expect(() => journal.createBulletJournalBook('InvalidSize')).toThrow('Unsupported paper size');
-    });
-
-    test('should throw error if doc parameter is missing in addDottedGridPage', () => {
-        expect(() => journal.addDottedGridPage(null, 0.2, { width: 8.27, height: 11.69 })).toThrow('Invalid document instance');
-    });
-
-    test('should throw error if dotSpacing is negative in addDottedGridPage', () => {
-        expect(() => journal.addDottedGridPage(doc, -0.2, { width: 8.27, height: 11.69 })).toThrow('Invalid dot spacing');
+    // Weekly overview
+    test('weekly overview renders all seven days plus goals panel', () => {
+        journal.addWeeklyOverviewPage(doc, A4);
+        const drawn = doc.text.mock.calls.map((c) => c[0]);
+        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Goals & Habits'].forEach(
+            (day) => expect(drawn).toContain(day)
+        );
     });
 
     test('should throw error if paperDimensions is missing in addWeeklyOverviewPage', () => {
         expect(() => journal.addWeeklyOverviewPage(doc, null)).toThrow('Invalid paper dimensions');
     });
 
-    // Edge Cases
-    test('should handle minimal dimensions in addDottedGridPage', () => {
-        expect(() => journal.addDottedGridPage(doc, 0.2, { width: 0.5, height: 0.5 })).not.toThrow();
+    // Habit tracker
+    test('habit tracker renders a 31-day matrix and goal checkboxes', () => {
+        journal.addFlexibleTrackingPage(doc, A4);
+        const drawn = doc.text.mock.calls.map((c) => String(c[0]));
+        expect(drawn).toContain('1');
+        expect(drawn).toContain('31');
+        expect(drawn.map((t) => t.toUpperCase())).toContain('GOAL-SETTING');
+        expect(doc.rect).toHaveBeenCalled();
     });
 
-    test('should handle minimal dimensions in addDailyPlanningPage', () => {
-        expect(() => journal.addDailyPlanningPage(doc, { width: 0.5, height: 0.5 })).not.toThrow();
+    test('should throw error if paperDimensions is missing in addFlexibleTrackingPage', () => {
+        expect(() => journal.addFlexibleTrackingPage(doc, null)).toThrow('Invalid paper dimensions');
     });
 
-    test('should add daily planning elements correctly in addDailyPlanningPage', () => {
-        jest.spyOn(doc, 'text');
-        jest.spyOn(doc, 'circle');
-
-        journal.addDailyPlanningPage(doc, { width: 8.27, height: 11.69 });
-
-        expect(doc.text).toHaveBeenCalledWith('Daily Planner', expect.any(Number), 20, null, null, 'center');
-        expect(doc.text).toHaveBeenCalledWith('Morning', 10, 40);
-        expect(doc.text).toHaveBeenCalledWith('Afternoon', 10, 80);
-        expect(doc.text).toHaveBeenCalledWith('Evening', 10, 120);
-        expect(doc.text).toHaveBeenCalledWith('To-Do List', 10, 150);
-
-        // Verify circles for To-Do List and Priority Tasks
-        expect(doc.circle).toHaveBeenCalledTimes(13); // 10 for To-Do + 3 for Priority
+    // Illustration page
+    test('should throw an error if doc is missing in addIllustrationPage', () => {
+        expect(() => journal.addIllustrationPage(null, 'dailyPlanner')).toThrow('Invalid document instance');
     });
 
-    test('should add weekly overview days and goals correctly in addWeeklyOverviewPage', () => {
-        jest.spyOn(doc, 'text');
-        jest.spyOn(doc, 'line');
-        jest.spyOn(doc, 'circle');
-
-        journal.addWeeklyOverviewPage(doc, { width: 8.27, height: 11.69 });
-
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        days.forEach(day => expect(doc.text).toHaveBeenCalledWith(day, expect.any(Number), expect.any(Number)));
-        expect(doc.line).toHaveBeenCalled(); // Checks for week lines
-
-        expect(doc.text).toHaveBeenCalledWith("Goals", 10, 140);
-        expect(doc.circle).toHaveBeenCalledTimes(5); // Verify 5 goal circles
+    test('should add illustration page without errors', () => {
+        expect(() => journal.addIllustrationPage(doc, 'flexibleTracking')).not.toThrow();
+        expect(doc.addImage).toHaveBeenCalledWith(
+            expect.stringContaining('flexibleTracking.png'),
+            'PNG',
+            expect.any(Number),
+            expect.any(Number),
+            expect.any(Number),
+            expect.any(Number)
+        );
     });
 
-    test('should handle large dotSpacing in addDottedGridPage', () => {
-        expect(() => journal.addDottedGridPage(doc, 2, { width: 8.27, height: 11.69 })).not.toThrow();
+    // Small paper sizes must not overflow
+    ['A3', 'A4', 'A5', 'A6'].forEach((size) => {
+        test(`generates a complete ${size} journal without errors`, () => {
+            expect(() => journal.generate(size, doc)).not.toThrow();
+        });
     });
 
-    test('should handle very large dimensions in addDottedGridPage', () => {
-        expect(() => journal.addDottedGridPage(doc, 0.2, { width: 50, height: 50 })).not.toThrow();
-    });
-
-    test('should add multiple pages in createBulletJournalBook for a full journal', () => {
-        journal.createBulletJournalBook('A4', doc);
-        expect(doc.addPage).toHaveBeenCalled(); // Confirm that multiple pages were added
-    });
-
-    test('should return the correct expected page count', () => {
-        const expectedPageCount = journal.getExpectedPageCount();
-        expect(expectedPageCount).toBe(65); // Updated based on recalculated page count
-    });
-
+    // Full book assembly
     test('should call each page method in createBulletJournalBook', () => {
         jest.spyOn(journal, 'applyColors');
+        jest.spyOn(journal, 'addCoverPage');
+        jest.spyOn(journal, 'addIndexPage');
         jest.spyOn(journal, 'addDottedGridPage');
         jest.spyOn(journal, 'addDailyPlanningPage');
         jest.spyOn(journal, 'addWeeklyOverviewPage');
         jest.spyOn(journal, 'addFlexibleTrackingPage');
-        jest.spyOn(doc, 'addPage');
 
         journal.createBulletJournalBook('A4', doc);
 
         expect(journal.applyColors).toHaveBeenCalledTimes(1);
+        expect(journal.addCoverPage).toHaveBeenCalledTimes(1);
+        expect(journal.addIndexPage).toHaveBeenCalledTimes(1);
         expect(journal.addDottedGridPage).toHaveBeenCalledTimes(12);
         expect(journal.addDailyPlanningPage).toHaveBeenCalledTimes(12);
         expect(journal.addWeeklyOverviewPage).toHaveBeenCalledTimes(12);
         expect(journal.addFlexibleTrackingPage).toHaveBeenCalledTimes(12);
-        expect(doc.addPage).toHaveBeenCalledTimes(66); // Update expectation to match confirmed page count
     });
 
+    test('book has the expected page count with no blank first page', () => {
+        journal.createBulletJournalBook('A4', doc);
+        // Cover uses the document's initial page, so addPage is called
+        // exactly (expected pages - 1) times.
+        expect(doc.addPage).toHaveBeenCalledTimes(journal.getExpectedPageCount() - 1);
+    });
+
+    test('should return the correct expected page count', () => {
+        // 1 cover + 1 index + 13 future log + 2 milestones + 1 year overview + 48 monthly
+        expect(journal.getExpectedPageCount()).toBe(66);
+    });
+
+    test('should call save with the correct filename in createBulletJournalBook', () => {
+        journal.createBulletJournalBook('A4', doc);
+        expect(doc.save).toHaveBeenCalledWith('test_journal_journal_book.pdf');
+    });
+
+    test('generate returns the document without saving', () => {
+        const result = journal.generate('A4', doc);
+        expect(result).toBe(doc);
+        expect(doc.save).not.toHaveBeenCalled();
+    });
 });

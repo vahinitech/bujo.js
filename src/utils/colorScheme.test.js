@@ -1,6 +1,6 @@
 // src/utils/colorScheme.test.js
 
-import { applyColorScheme, SCHEMES } from '../../src/utils/colorScheme';
+import { applyColorScheme, SCHEMES } from '../../src/utils/colorScheme.js';
 
 describe('applyColorScheme', () => {
     test('should return the refined color scheme for "color" mode', () => {

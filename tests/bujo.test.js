@@ -1,6 +1,6 @@
-import { BulletJournal, PAPER_SIZES } from '../src/bujo';
+import { BulletJournal, PAPER_SIZES } from '../src/bujo.js';
 import { jsPDF } from 'jspdf';
-import { applyColorScheme } from '../src/utils/colorScheme';
+import { applyColorScheme } from '../src/utils/colorScheme.js';
 
 // Mock jsPDF so no real PDF is rendered during tests.
 jest.mock('jspdf', () => {

@@ -1,12 +1,23 @@
 name: CI Pipeline
 
 on:
+  # Docs-only changes (README/CLAUDE.md/docs/**) skip this whole pipeline --
+  # nothing here builds or tests markdown. A push/PR that touches even one
+  # non-doc file still runs everything; paths-ignore only fires when EVERY
+  # changed file matches. (commitlint.yml is intentionally NOT filtered --
+  # it's cheap and checks the commit message, not file contents.)
   push:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
 
 jobs:
   test:

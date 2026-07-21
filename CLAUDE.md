@@ -9,6 +9,10 @@
   a non-conforming message fails the pipeline. `feat:`, `fix:`, `docs:`,
   `test:`, `chore:`; imperative mood; body explains why.
 - **Build and test before every commit; pipeline green before merge.**
+- **Docs-only changes skip the test pipeline** — `ci.yml` has
+  `paths-ignore: ['**/*.md', 'docs/**']`; a PR touching only markdown never
+  triggers it. `commitlint.yml` runs regardless — it checks the commit
+  message, not files, and is cheap either way.
 - **No AI-isms** in docs, comments, or commit messages — plain, specific
   language only.
 

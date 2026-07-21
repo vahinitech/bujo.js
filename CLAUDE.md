@@ -5,6 +5,15 @@
 - **Verify before claiming.** Read `src/` before describing behaviour;
   never invent APIs or options. If unsure whether something exists,
   grep it, don't guess.
+- **Never copy another project's code into this repo — reference it,
+  don't paste it.** If an external library/snippet is genuinely needed,
+  add it as a real npm dependency (with its own license intact) or
+  reimplement independently, not by pasting source. If literal reuse of
+  someone else's non-package code is truly unavoidable, get the original
+  author's explicit consent first and record it in the commit/PR.
+  Unattributed code reuse is an IP risk, and it applies with extra force
+  to AI-assisted changes, since a model can reproduce code it saw during
+  training without anyone noticing the provenance.
 - **Conventional commits — enforced.** `commitlint.config.js` is active;
   a non-conforming message fails the pipeline. `feat:`, `fix:`, `docs:`,
   `test:`, `chore:`; imperative mood; body explains why.

@@ -8,6 +8,19 @@ JavaScript library generating customizable bullet-journal PDFs (planners,
 trackers, templates). Consumed by `vahinitech/web-live` as a pinned git
 submodule — public API changes ripple downstream.
 
+## Provenance: Never Copied Code
+
+- **Flag any newly added code that looks lifted from another PDF/journal
+  library or a gist/Stack Overflow answer** — unusual style vs. the rest
+  of `src/`, naming that doesn't match this codebase, or a suspiciously
+  complete block appearing all at once. Ask directly: "is this a real
+  dependency/cited, or copied?"
+- External code belongs in as a real npm dependency with its own license
+  intact, not pasted source with the license stripped.
+- If literal reuse of someone else's non-package code is genuinely
+  needed, get the original author's consent first and record it in the
+  PR. Applies with extra force to AI-assisted changes.
+
 ## Security Critical Issues
 
 - No hardcoded secrets or tokens.

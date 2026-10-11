@@ -5,8 +5,10 @@ applyTo: "**"
 # Code review instructions — vahinitech/bujo.js
 
 JavaScript library generating customizable bullet-journal PDFs (planners,
-trackers, templates). Consumed by `vahinitech/web-live` as a pinned git
-submodule — public API changes ripple downstream.
+trackers, templates). Consumed by `vahinitech/vahini-web` (renamed from
+`web-live`) at a pinned commit: it publishes the PDFs and manifest.json
+that `scripts/build-printables.mjs` writes, so public API, file name and
+manifest changes ripple downstream.
 
 ## Provenance: Never Copied Code
 
@@ -46,10 +48,11 @@ submodule — public API changes ripple downstream.
 - Commit messages are commitlint-enforced (`commitlint.config.js`) —
   check conventional format (`feat:`/`fix:`/etc.) before approving.
 - **Public API changes are a bigger deal than they look**: this library
-  is consumed by `vahinitech/web-live` as a pinned submodule. A changed
-  function signature, removed option, or different output shape needs a
-  called-out breaking-change note so the pin bump on the other side isn't
-  a surprise.
+  is consumed by `vahinitech/vahini-web` at a pinned commit. A changed
+  function signature, removed option, renamed edition or printable file,
+  changed manifest field, or different output shape needs a called-out
+  breaking-change note so the pin bump on the other side isn't a
+  surprise.
 
 ## Review Style
 

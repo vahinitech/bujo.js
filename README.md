@@ -18,6 +18,9 @@ The layout engine is fully metric (millimetres) and scale-aware: every page — 
 - **Daily Plan**: Morning/afternoon/evening time blocks, top priorities, to-dos and a dotted notes band.
 - **Weekly Overview**: Seven day panels plus an accented Goals & Habits panel.
 - **Habit Tracker**: A 31-day × 8-habit matrix with goal-setting and flexible tracking space.
+- **Handwriting Practice**: Four-line copybook ruling with a shaded middle band, as used in Indian schools.
+- **Pages for Children and Students**: Reading log, weekly study planner, 30-day practice tracker and a name cover.
+- **Printable Editions**: Five ready-made books and a build script that writes them, with a manifest, as byte-identical PDFs.
 - **Color Schemes**: A refined `color` palette (slate ink, muted petrol accent) and a `monochrome` palette.
 - **Browser and Node**: `createBulletJournalBook()` saves a download in the browser; `generate()` returns the jsPDF document so services can stream it (`doc.output('arraybuffer')`).
 
@@ -102,7 +105,109 @@ Legacy inch-based dimensions (e.g. `{ width: 8.27, height: 11.69 }`) and inch do
 | `addDottedGridPage(doc, spacingMm, paper)` | Full-page dot grid |
 | `addDailyPlanningPage(doc, paper)` | Daily plan |
 | `addWeeklyOverviewPage(doc, paper)` | Weekly overview |
-| `addFlexibleTrackingPage(doc, paper)` | Habit tracker + goals |
+| `addFlexibleTrackingPage(doc, paper, opts?)` | Habit tracker + goals; `opts.kicker`, `opts.monthLine` |
+| `addNameCoverPage(doc, paper, opts?)` | Cover with a "This journal belongs to" line, on the current page |
+| `addHowToUsePage(doc, paper, opts?)` | Numbered instructions, optional key to the four lines |
+| `addHandwritingPracticePage(doc, paper, opts?)` | Four-line handwriting ruling |
+| `addReadingLogPage(doc, paper)` | Reading log with stars to colour in |
+| `addStudyPlannerPage(doc, paper, opts?)` | One school week with goal and exams boxes |
+| `addPracticeTrackerPage(doc, paper, opts?)` | 30-day practice tracker |
+
+### Pages for Children and Students
+
+These draw on the same document as the other sections and follow the same margins and colour scheme on every paper size.
+
+```javascript
+const doc = journal.createDocument('A4');
+const paper = PAPER_SIZES.A4;
+
+journal.addNameCoverPage(doc, paper, {
+    title: 'My Handwriting Journal',
+    subtitle: 'Ten minutes a day of careful writing',
+    kicker: 'Practice Every Day'
+});
+journal.addHandwritingPracticePage(doc, paper, { title: 'Letters a to m' });
+journal.addReadingLogPage(doc, paper);
+journal.addStudyPlannerPage(doc, paper, { week: 1 });
+journal.addPracticeTrackerPage(doc, paper);
+```
+
+- **`addHandwritingPracticePage`** draws sets of four evenly spaced lines, as in Indian school copybooks. Small letters fill the shaded band between lines 2 and 3 and sit on line 3, which is the darkest; line 2 is dashed; tall letters and capitals reach line 1 and tails reach line 4. A margin line runs down the left, with name and date lines at the top. Options: `bandMm`, the height of one set (default 12 mm on A4, between 8 and 16 mm on other papers, because children write at much the same size on any page); `rows`, to draw fewer sets than fit; `title` and `kicker` for the heading. The number of sets comes from the page height.
+- **`addReadingLogPage`** is a table with Date, Book title, Pages or minutes and How did it go?, where each row has three star outlines to colour in. The stars are drawn from lines, since the standard PDF fonts have no emoji.
+- **`addStudyPlannerPage`** has "This week's goal" and "Exams and tests coming up" boxes above a Monday to Sunday table with Subject, Homework or topic and a Done checkbox on each line. `opts.week` puts "Week n" above the title.
+- **`addPracticeTrackerPage`** has 30 numbered day boxes in 5 rows of 6, each with a checkbox, and boxes for "Letters I find hard" and "Letters I improved".
+- **`addNameCoverPage`** uses the existing cover frame with `title` (default: the journal title), `subtitle` and `kicker`, and a "This journal belongs to" line. Like `addCoverPage`, it draws on the current page.
+- **`addHowToUsePage`** prints `opts.items` as a numbered list under `opts.title`. `opts.rulingGuide: true` adds an enlarged four-line set with a note beside each part.
+
+### Footer Option
+
+The constructor takes an optional third argument:
+
+```javascript
+const journal = new BulletJournal('My Handwriting Journal', 'color', {
+    footer: 'Free handwriting check: vahinitech.com'
+});
+```
+
+When `footer` is set, every page gets that text centred in small grey type in the bottom margin, on the same line as the page label and number; on covers it sits inside the frame. It never overlaps page content. If a long page label would run into it, the label is left out. Without the option nothing changes, and `new BulletJournal(title, colorScheme)` works as before.
+
+## Printable Editions
+
+`EDITIONS` lists ready-made books and `buildEdition(id, paperSize, options)` builds one and returns the jsPDF document. `options` takes `footer` and `colorScheme` (default `color`).
+
+```javascript
+import { EDITIONS, buildEdition } from 'bujo.js';
+
+const doc = buildEdition('kids-handwriting-journal', 'A5', {
+    footer: 'Free handwriting check: vahinitech.com'
+});
+const pdf = Buffer.from(doc.output('arraybuffer'));
+```
+
+| id | Title | Pages | Contents |
+|----|-------|-------|----------|
+| `kids-handwriting-journal` | My Handwriting Journal | 29 | Name cover, how to use, practice tracker, 24 practice pages, 2 reading logs |
+| `handwriting-practice-pages` | Handwriting Practice Pages | 11 | Name cover, 10 practice pages |
+| `student-study-planner` | Student Study Planner | 17 | Name cover, 12 weekly planners, 2 habit trackers, 2 reading logs |
+| `habit-tracker` | Habit Tracker | 13 | Cover, 12 undated monthly habit trackers |
+| `bullet-journal` | Bullet Journal | 66 | The full book from `generate()` |
+
+Each entry has `id`, `title`, `description` (one sentence), `pages` (the exact count on every paper) and `papers` (`['A4', 'A5']`). The page counts are checked by the tests.
+
+Editions are reproducible: they get a fixed creation date, a file id derived from the edition, paper, footer and colour scheme, and fixed document properties, so the same input always gives the same bytes.
+
+### Build Script
+
+```bash
+npm run build:printables -- --footer "Free handwriting check: vahinitech.com"
+# or
+node scripts/build-printables.mjs [--footer "text"] [--out dir]
+```
+
+It writes every edition on A4 and A5 to `dist/printables/<id>-<paper>.pdf` (for example `kids-handwriting-journal-a5.pdf`) and one `manifest.json`:
+
+```json
+{
+  "generator": "bujo.js",
+  "version": "1.0.0",
+  "commit": "<git HEAD sha, or null outside a git checkout>",
+  "footer": "Free handwriting check: vahinitech.com",
+  "files": [
+    {
+      "id": "kids-handwriting-journal",
+      "title": "My Handwriting Journal",
+      "description": "A month of daily handwriting practice for children, with a practice tracker and a reading log.",
+      "paper": "A4",
+      "pages": 29,
+      "file": "kids-handwriting-journal-a4.pdf",
+      "bytes": 64679,
+      "sha256": "<hex>"
+    }
+  ]
+}
+```
+
+`footer` is `null` when `--footer` is not given. `--out` writes somewhere other than `dist/printables`. The script stops if a built file does not have the page count its edition declares. It needs no network.
 
 ## Demo
 
@@ -117,7 +222,10 @@ npx serve .
 
 ```bash
 npm test
+npm run lint
 ```
+
+The page and edition tests run against the real jsPDF: they check that every drawing stays inside the content area from A6 to A3, that the footer is on every page and clear of everything else, the page count of every edition, and that two runs of the build script give byte-identical files.
 
 ## Dependencies
 

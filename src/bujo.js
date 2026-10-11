@@ -1218,3 +1218,4 @@ class BulletJournal {
 }
 
 export { BulletJournal, PAPER_SIZES };
+export { EDITIONS, buildEdition, EDITION_PAPERS } from './editions.js';

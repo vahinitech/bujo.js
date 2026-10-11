@@ -13,7 +13,8 @@
   ],
   "scripts": {
     "test": "jest",
-    "lint": "eslint src/ tests/"
+    "lint": "eslint src/ tests/ scripts/",
+    "build:printables": "node scripts/build-printables.mjs"
   },
   "repository": {
     "type": "git",

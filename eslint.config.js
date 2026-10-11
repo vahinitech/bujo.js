@@ -19,7 +19,19 @@ export default [
                 describe: 'readonly',
                 test: 'readonly',
                 expect: 'readonly',
-                beforeEach: 'readonly'
+                beforeEach: 'readonly',
+                afterAll: 'readonly',
+                __dirname: 'readonly'
+            }
+        }
+    },
+    {
+        files: ['scripts/**/*.mjs'],
+        languageOptions: {
+            ecmaVersion: 2023,
+            sourceType: 'module',
+            globals: {
+                console: 'readonly'
             }
         }
     },

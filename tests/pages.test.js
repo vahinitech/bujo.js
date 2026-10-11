@@ -210,3 +210,16 @@ describe('footer option', () => {
         expect(texts.some((t) => t.startsWith('A VERY LONG'))).toBe(false);
     });
 });
+
+describe('spaced kickers', () => {
+    test('a centred kicker is centred including its letter spacing', () => {
+        const journal = new BulletJournal('Kicker');
+        const doc = newDoc(journal, 'A5');
+        const shapes = record(doc);
+        journal.addCoverPage(doc, PAPER_SIZES.A5);
+        const L = journal._layout(PAPER_SIZES.A5);
+        const kicker = shapes.find((s) => s.kind === 'text' && s.text === 'BULLET JOURNAL');
+        expect(kicker.x2 - kicker.x1).toBeGreaterThan(doc.getTextWidth('BULLET JOURNAL'));
+        expect(Math.abs((kicker.x1 + kicker.x2) / 2 - L.centerX)).toBeLessThan(0.05);
+    });
+});

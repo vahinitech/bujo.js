@@ -108,8 +108,20 @@ class BulletJournal {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(F.tiny);
         doc.setTextColor(this.colors.subtle);
-        if (typeof doc.setCharSpace === 'function') doc.setCharSpace(0.6 * L.f);
-        doc.text(String(text).toUpperCase(), x, y, { align });
+        const label = String(text).toUpperCase();
+        const charSpace = 0.6 * L.f;
+        // jsPDF's own centring does not allow for the full letter spacing,
+        // so spaced kickers drifted right. Work out the left edge here from
+        // the unspaced width plus the gaps between letters.
+        let ax = x;
+        const measured = align !== 'left' && typeof doc.getTextWidth === 'function';
+        if (measured) {
+            if (typeof doc.setCharSpace === 'function') doc.setCharSpace(0);
+            const width = doc.getTextWidth(label) + charSpace * Math.max(0, label.length - 1);
+            ax = align === 'center' ? x - width / 2 : x - width;
+        }
+        if (typeof doc.setCharSpace === 'function') doc.setCharSpace(charSpace);
+        doc.text(label, ax, y, measured ? {} : { align });
         if (typeof doc.setCharSpace === 'function') doc.setCharSpace(0);
     }
 

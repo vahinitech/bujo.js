@@ -27,7 +27,11 @@ export function record(doc) {
     wrap('roundedRect', (x, y, w, h) => ({ x1: x, x2: x + w, y1: y, y2: y + h }));
     wrap('circle', (x, y, r) => ({ x1: x - r, x2: x + r, y1: y - r, y2: y + r }));
     wrap('text', (text, x, y, opts = {}) => {
-        let w = doc.getTextWidth(String(text));
+        // Visible width: glyphs plus the letter spacing between them.
+        const charSpace = doc.getCharSpace();
+        doc.setCharSpace(0);
+        let w = doc.getTextWidth(String(text)) + charSpace * Math.max(0, String(text).length - 1);
+        doc.setCharSpace(charSpace);
         if (opts.maxWidth) w = Math.min(w, opts.maxWidth);
         const x1 = opts.align === 'center' ? x - w / 2 : opts.align === 'right' ? x - w : x;
         return { text: String(text), x1, x2: x1 + w, y1: y, y2: y, size: doc.getFontSize() };

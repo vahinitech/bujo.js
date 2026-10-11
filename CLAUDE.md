@@ -35,10 +35,17 @@ npm run lint    # eslint src/ tests/
 Run both before every commit. A change without a matching test isn't done —
 add or update tests in `tests/` alongside the code change.
 
-## Consumers — breaking changes ripple
+## Consumers: breaking changes ripple
 
-- **vahinitech/web-live** consumes this library as a pinned git submodule.
-  Any public-API or output change requires bumping web-live's submodule
-  pin in a coordinated PR there, and its e2e suite is the integration
-  gate. Never assume a change here reaches the live site by itself —
-  web-live's pin controls what ships.
+- **vahinitech/vahini-web** (vahinitech.com; renamed from `web-live`)
+  consumes this library at a pinned commit. What it uses is the output of
+  `scripts/build-printables.mjs`: the PDFs in `dist/printables/` and their
+  `manifest.json`. The file names (`<edition id>-<paper>.pdf`), the
+  edition ids and the manifest fields (`generator`, `version`, `commit`,
+  `footer`, and per file `id`, `title`, `description`, `paper`, `pages`,
+  `file`, `bytes`, `sha256`) are a contract: renaming or removing one is a
+  breaking change (`feat!:`) and needs a coordinated pin bump in
+  vahini-web. A changed page count or layout changes the published PDFs,
+  so call it out in the PR. Builds must stay deterministic: the same
+  commit and options give byte-identical PDFs. Nothing here reaches the
+  live site until vahini-web moves its pin.

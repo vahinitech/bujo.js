@@ -151,9 +151,19 @@ const journal = new BulletJournal('My Handwriting Journal', 'color', {
 
 When `footer` is set, every page gets that text centred in small grey type in the bottom margin, on the same line as the page label and number; on covers it sits inside the frame. It never overlaps page content. If a long page label would run into it, the label is left out. Without the option nothing changes, and `new BulletJournal(title, colorScheme)` works as before.
 
+### Owner Name
+
+`owner` prints a name on the cover: on the "This journal belongs to" line of a name cover, and under the tagline of the bullet-journal cover. It is trimmed, inner spaces are collapsed, and it is cut at 40 characters (`MAX_OWNER_CHARS`); a long name is set smaller so it stays on the line.
+
+```javascript
+const journal = new BulletJournal('My Handwriting Journal', 'color', { owner: 'Vahini' });
+```
+
+The built-in PDF fonts only draw Latin-1 text, so a name in another script (Telugu, Hindi, Tamil...) is refused with an error rather than printed as stray symbols. `fitsStandardFonts(name)` tells a caller in advance. Without `owner`, the cover keeps its blank line to write on and nothing else changes.
+
 ## Printable Editions
 
-`EDITIONS` lists ready-made books and `buildEdition(id, paperSize, options)` builds one and returns the jsPDF document. `options` takes `footer` and `colorScheme` (default `color`).
+`EDITIONS` lists ready-made books and `buildEdition(id, paperSize, options)` builds one and returns the jsPDF document. `options` takes `footer`, `colorScheme` (default `color`) and `owner`.
 
 ```javascript
 import { EDITIONS, buildEdition } from 'bujo.js';
@@ -174,7 +184,7 @@ const pdf = Buffer.from(doc.output('arraybuffer'));
 
 Each entry has `id`, `title`, `description` (one sentence), `pages` (the exact count on every paper) and `papers` (`['A4', 'A5']`). The page counts are checked by the tests.
 
-Editions are reproducible: they get a fixed creation date, a file id derived from the edition, paper, footer and colour scheme, and fixed document properties, so the same input always gives the same bytes.
+Editions are reproducible: they get a fixed creation date, a file id derived from the edition, paper, footer, colour scheme and owner name, and fixed document properties, so the same input always gives the same bytes.
 
 ### Build Script
 

@@ -16,6 +16,33 @@ const PAPER_SIZES = {
 const MONTH_SECTION_PAGES = 4; // dot grid, daily, weekly, tracker
 const MONTHS = 12;
 const MAX_FOOTER_CHARS = 120;
+const MAX_OWNER_CHARS = 40;
+
+/*
+ * Characters the built-in PDF fonts (Helvetica, Times) can draw: jsPDF
+ * writes them with WinAnsiEncoding, which is Latin-1 plus these.
+ */
+const WIN_ANSI_EXTRA = '\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d'
+    + '\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178';
+
+/**
+ * True when every character of `text` can be drawn by the built-in fonts.
+ * Names in other scripts (Telugu, Hindi, Tamil...) need an embedded font,
+ * which this library does not ship, so callers check before passing them.
+ */
+function fitsStandardFonts(text) {
+    return [...String(text)].every((ch) => {
+        const code = ch.codePointAt(0);
+        return (code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff) || WIN_ANSI_EXTRA.includes(ch);
+    });
+}
+
+/** Trims, collapses spaces and caps an owner's name; null when empty. */
+function cleanOwner(value) {
+    if (typeof value !== 'string') return null;
+    const name = value.replace(/\s+/g, ' ').trim().slice(0, MAX_OWNER_CHARS).trim();
+    return name || null;
+}
 
 /**
  * Older releases expressed paper sizes in inches. Any dimension small
@@ -38,12 +65,19 @@ class BulletJournal {
      * @param {Object} [options]
      * @param {string} [options.footer] Text printed centred in the bottom
      *   margin of every page, e.g. a web address. Off when not set.
+     * @param {string} [options.owner] Name printed on the cover, up to 40
+     *   characters the built-in fonts can draw (see fitsStandardFonts).
+     *   Off when not set: the cover keeps its blank line to write on.
      */
     constructor(title = 'My Bullet Journal', colorScheme = 'color', options = {}) {
         this.title = title;
         this.colorScheme = colorScheme;
         const footer = options && typeof options.footer === 'string' ? options.footer.trim() : '';
         this.footerText = footer ? footer.slice(0, MAX_FOOTER_CHARS) : null;
+        this.owner = cleanOwner(options && options.owner);
+        if (this.owner && !fitsStandardFonts(this.owner)) {
+            throw new Error('Owner name has characters the built-in fonts cannot draw');
+        }
         this.colors = applyColorScheme(null, colorScheme);
         this._paper = PAPER_SIZES.A4;
         this._pageNo = 0;
@@ -207,6 +241,18 @@ class BulletJournal {
         doc.text(this.footerText, L.centerX, y, { align: 'center' });
     }
 
+    /** The owner's name centred at baseline `y`, shrunk to fit `maxWidth`. */
+    _ownerName(doc, L, y, maxWidth) {
+        const F = this._fonts(L);
+        let size = F.title;
+        const width = this._textWidth(doc, this.owner, size);
+        if (width > maxWidth && maxWidth > 0) size = size * (maxWidth / width);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(size);
+        doc.setTextColor(this.colors.ink);
+        doc.text(this.owner, L.centerX, y, { align: 'center' });
+    }
+
     /** Footer position on a cover: inside the inner frame, near the bottom. */
     _coverFooter(doc, L) {
         const inner = L.margin * 0.55 + 1.6 * L.s;
@@ -307,6 +353,8 @@ class BulletJournal {
         doc.setFontSize(F.body);
         doc.setTextColor(this.colors.subtle);
         doc.text('An undated planner for intentional living', L.centerX, L.h * 0.52, { align: 'center' });
+
+        if (this.owner) this._ownerName(doc, L, L.h * 0.575, L.contentW * 0.8);
 
         // Year fill-in.
         doc.setFont('helvetica', 'normal');
@@ -806,6 +854,7 @@ class BulletJournal {
         doc.setTextColor(this.colors.ink);
         doc.text('This journal belongs to', L.centerX, nameY, { align: 'center' });
         const half = L.contentW * 0.32;
+        if (this.owner) this._ownerName(doc, L, nameY + 7.5 * L.s, half * 2);
         this._rule(doc, L, L.centerX - half, L.centerX + half, nameY + 9 * L.s);
 
         doc.setFillColor(this.colors.accent);
@@ -1229,5 +1278,5 @@ class BulletJournal {
     }
 }
 
-export { BulletJournal, PAPER_SIZES };
+export { BulletJournal, PAPER_SIZES, fitsStandardFonts, MAX_OWNER_CHARS };
 export { EDITIONS, buildEdition, EDITION_PAPERS } from './editions.js';

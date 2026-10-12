@@ -117,7 +117,8 @@ function stableFileId(text) {
 
 /**
  * Builds one edition and returns the jsPDF document (nothing is saved).
- * options: { footer, colorScheme }.
+ * options: { footer, colorScheme, owner }. `owner` prints a name on the
+ * cover; without it the bytes are exactly those of the published edition.
  */
 function buildEdition(id, paperSize, options = {}) {
     const edition = EDITIONS.find((e) => e.id === id);
@@ -125,7 +126,7 @@ function buildEdition(id, paperSize, options = {}) {
     const paper = PAPER_SIZES[paperSize];
     if (!paper) throw new Error('Unsupported paper size');
 
-    const journal = new BulletJournal(edition.title, options.colorScheme || 'color', { footer: options.footer });
+    const journal = new BulletJournal(edition.title, options.colorScheme || 'color', { footer: options.footer, owner: options.owner });
     let doc;
     if (id === 'bullet-journal') {
         doc = journal.generate(paperSize);
@@ -139,7 +140,9 @@ function buildEdition(id, paperSize, options = {}) {
 
     if (typeof doc.setCreationDate === 'function') doc.setCreationDate(FIXED_CREATION_DATE);
     if (typeof doc.setFileId === 'function') {
-        doc.setFileId(stableFileId(`${id}|${paperSize}|${journal.footerText || ''}|${journal.colorScheme}`));
+        // The owner joins the id only when set, so unnamed editions keep their bytes.
+        const owner = journal.owner ? `|${journal.owner}` : '';
+        doc.setFileId(stableFileId(`${id}|${paperSize}|${journal.footerText || ''}|${journal.colorScheme}${owner}`));
     }
     if (typeof doc.setProperties === 'function') {
         doc.setProperties({

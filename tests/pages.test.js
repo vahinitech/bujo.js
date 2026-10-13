@@ -1,7 +1,11 @@
 // Page methods and the footer option, drawn on the real jsPDF.
 
 import { BulletJournal, PAPER_SIZES } from '../src/bujo.js';
-import { EPS, FOOTER, newDoc, record } from './helpers/drawing.js';
+import { EXPERIMENTS, IF_I_AM_LOST, TRICKS } from '../src/editionText.js';
+import { EPS, FOOTER, loadTestArt, newDoc, record } from './helpers/drawing.js';
+
+const { art } = loadTestArt();
+const TABLE = [{ label: 'Date', share: 0.15 }, { label: 'What we discussed', share: 0.6 }, { label: 'Next step', share: 0.25 }];
 
 const PAGE_METHODS = {
     addHandwritingPracticePage: (j, doc, paper) => j.addHandwritingPracticePage(doc, paper, { title: 'Letters a to m' }),
@@ -9,14 +13,33 @@ const PAGE_METHODS = {
     addStudyPlannerPage: (j, doc, paper) => j.addStudyPlannerPage(doc, paper, { week: 7 }),
     addPracticeTrackerPage: (j, doc, paper) => j.addPracticeTrackerPage(doc, paper),
     addHowToUsePage: (j, doc, paper) =>
-        j.addHowToUsePage(doc, paper, { items: ['Practise ten minutes a day.', 'Write slowly.'], rulingGuide: true })
+        j.addHowToUsePage(doc, paper, { items: ['Practise ten minutes a day.', 'Write slowly.'], rulingGuide: true }),
+    addAboutMePage: (j, doc, paper) => j.addAboutMePage(doc, paper, { lostTips: IF_I_AM_LOST, picture: 'mascot_welcome' }),
+    addNumberMemoryPage: (j, doc, paper) => j.addNumberMemoryPage(doc, paper, { picture: 'pihu_notice' }),
+    addWayHomePage: (j, doc, paper) => j.addWayHomePage(doc, paper, { picture: 'rama_explore' }),
+    addExperimentPage: (j, doc, paper) => j.addExperimentPage(doc, paper, { ...EXPERIMENTS.shadow, picture: 'chinnu_try' }),
+    addIdeasPage: (j, doc, paper) => j.addIdeasPage(doc, paper, { challenge: 'How could a school bag be lighter?', picture: 'feature_mindmap' }),
+    addTricksPage: (j, doc, paper) => j.addTricksPage(doc, paper, { tricks: TRICKS[0], picture: 'mascot_curious' }),
+    addDrawingPage: (j, doc, paper) => j.addDrawingPage(doc, paper, { prompt: 'Draw a new friend for Bheema.', picture: 'mascot_welcome' }),
+    addColourMixPage: (j, doc, paper) => j.addColourMixPage(doc, paper, { picture: 'cover_art' }),
+    addFinishPage: (j, doc, paper) => j.addFinishPage(doc, paper, { picture: 'mascot_success' }),
+    addTablePage: (j, doc, paper) => j.addTablePage(doc, paper, { title: 'Parent Meetings', columns: TABLE, fillIn: 'month of' }),
+    addRegisterPage: (j, doc, paper) => j.addRegisterPage(doc, paper, { title: 'Attendance', columns: 31, numbered: true, fillIn: 'month of' }),
+    marksRegister: (j, doc, paper) => j.addRegisterPage(doc, paper, { title: 'Marks', columns: 10, subHead: 'max marks', total: true }),
+    addTimetablePage: (j, doc, paper) => j.addTimetablePage(doc, paper),
+    addLessonPlanPage: (j, doc, paper) => j.addLessonPlanPage(doc, paper, { week: 4 }),
+    addStudentNotesPage: (j, doc, paper) => j.addStudentNotesPage(doc, paper),
+    addCaseNotePage: (j, doc, paper) => j.addCaseNotePage(doc, paper),
+    addSectionPage: (j, doc, paper) =>
+        j.addSectionPage(doc, paper, { kicker: 'Day by Day', title: 'Hearings', text: 'Each day and the next date.', picture: 'courtroom_find_note' }),
+    addNotesPage: (j, doc, paper) => j.addNotesPage(doc, paper, { title: 'Looking Back', prompts: ['What worked', 'What I will change'] })
 };
 
 describe('new page methods stay inside the content area', () => {
     ['A6', 'A5', 'A4', 'A3'].forEach((size) => {
         Object.entries(PAGE_METHODS).forEach(([name, draw]) => {
             test(`${name} on ${size}`, () => {
-                const journal = new BulletJournal('Bounds', 'color', { footer: FOOTER });
+                const journal = new BulletJournal('Bounds', 'color', { footer: FOOTER, art });
                 const doc = newDoc(journal, size);
                 const shapes = record(doc);
                 draw(journal, doc, PAPER_SIZES[size]);
@@ -24,7 +47,8 @@ describe('new page methods stay inside the content area', () => {
 
                 expect(doc.getNumberOfPages()).toBe(2);
                 const onPage = shapes.filter((s) => s.page === 2);
-                expect(onPage.length).toBeGreaterThan(10);
+                // A section divider is a picture and three lines of words by design.
+                expect(onPage.length).toBeGreaterThan(name === 'addSectionPage' ? 5 : 10);
                 onPage.forEach((s) => {
                     expect(s.x1).toBeGreaterThanOrEqual(L.margin - EPS);
                     expect(s.x2).toBeLessThanOrEqual(L.right + EPS);
@@ -168,7 +192,10 @@ describe('page contents', () => {
     test('page methods reject a missing document', () => {
         const journal = new BulletJournal();
         ['addHandwritingPracticePage', 'addReadingLogPage', 'addStudyPlannerPage', 'addPracticeTrackerPage',
-            'addNameCoverPage', 'addHowToUsePage'].forEach((name) => {
+            'addNameCoverPage', 'addHowToUsePage', 'addAboutMePage', 'addNumberMemoryPage', 'addWayHomePage',
+            'addExperimentPage', 'addIdeasPage', 'addTricksPage', 'addDrawingPage', 'addColourMixPage', 'addFinishPage',
+            'addTablePage', 'addRegisterPage', 'addTimetablePage', 'addLessonPlanPage', 'addStudentNotesPage',
+            'addCaseNotePage', 'addSectionPage', 'addNotesPage'].forEach((name) => {
             expect(() => journal[name](null, PAPER_SIZES.A4)).toThrow('Invalid document instance');
         });
     });

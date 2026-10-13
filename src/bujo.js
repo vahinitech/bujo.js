@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { applyColorScheme } from './utils/colorScheme.js';
+import { kidsPages } from './pages/kids.js';
+import { recordPages } from './pages/records.js';
 
 /**
  * Paper sizes in millimetres (portrait).
@@ -44,6 +46,19 @@ function cleanOwner(value) {
     return name || null;
 }
 
+/** Keeps the usable entries of an `art` option: PNG bytes with a positive size. */
+function cleanArt(value) {
+    const art = {};
+    if (!value || typeof value !== 'object') return art;
+    Object.entries(value).forEach(([id, picture]) => {
+        if (!picture || !(picture.data instanceof Uint8Array)) return;
+        const width = Number(picture.width);
+        const height = Number(picture.height);
+        if (width > 0 && height > 0) art[id] = { data: picture.data, width, height };
+    });
+    return art;
+}
+
 /**
  * Older releases expressed paper sizes in inches. Any dimension small
  * enough to be an inch measurement is converted to millimetres so
@@ -68,6 +83,10 @@ class BulletJournal {
      * @param {string} [options.owner] Name printed on the cover, up to 40
      *   characters the built-in fonts can draw (see fitsStandardFonts).
      *   Off when not set: the cover keeps its blank line to write on.
+     * @param {Object} [options.art] Pictures by id, each
+     *   `{ data: Uint8Array, width, height }` of a PNG. Pages that name a
+     *   picture draw it when it is here and leave the space out when it is
+     *   not, so every page also works without pictures.
      */
     constructor(title = 'My Bullet Journal', colorScheme = 'color', options = {}) {
         this.title = title;
@@ -78,6 +97,7 @@ class BulletJournal {
         if (this.owner && !fitsStandardFonts(this.owner)) {
             throw new Error('Owner name has characters the built-in fonts cannot draw');
         }
+        this.art = cleanArt(options && options.art);
         this.colors = applyColorScheme(null, colorScheme);
         this._paper = PAPER_SIZES.A4;
         this._pageNo = 0;
@@ -320,14 +340,88 @@ class BulletJournal {
         this._rule(doc, L, x1 + L.box + 1.5 * L.s, x2, y);
     }
 
+    /** True when the picture `id` was passed in the `art` option. */
+    _hasPicture(id) {
+        return Boolean(id && this.art[id]);
+    }
+
+    /**
+     * Draws picture `id` as large as fits the box (x, y, w, h) without
+     * distortion, centred across and standing on the bottom edge (or
+     * centred both ways with valign 'middle'). Returns the drawn box, or
+     * null when the picture is not available.
+     */
+    _picture(doc, id, x, y, w, h, valign = 'bottom') {
+        const picture = this._hasPicture(id) ? this.art[id] : null;
+        if (!picture || !(w > 0) || !(h > 0)) return null;
+        const scale = Math.min(w / picture.width, h / picture.height);
+        const pw = picture.width * scale;
+        const ph = picture.height * scale;
+        const px = x + (w - pw) / 2;
+        const py = valign === 'middle' ? y + (h - ph) / 2 : y + h - ph;
+        // The alias makes jsPDF store each picture once per document.
+        doc.addImage(picture.data, 'PNG', px, py, pw, ph, `art-${id}`, 'MEDIUM');
+        return { x: px, y: py, w: pw, h: ph };
+    }
+
+    /**
+     * Pictures side by side, centred on the page between y1 and y2 within
+     * `width`, all standing on y2 as if on one floor.
+     */
+    _pictureRow(doc, L, ids, y1, y2, width) {
+        const gap = 4 * L.s;
+        const slotW = (width - gap * (ids.length - 1)) / ids.length;
+        const x0 = L.centerX - width / 2;
+        ids.forEach((id, n) => this._picture(doc, id, x0 + n * (slotW + gap), y1, slotW, y2 - y1));
+    }
+
+    /**
+     * Wrapped text from (x, y) within `width`. Returns the baseline below
+     * the last line plus one line step, where the next block can start.
+     */
+    _paragraph(doc, L, text, x, y, width, opts = {}) {
+        const F = this._fonts(L);
+        const size = opts.size || F.body;
+        doc.setFont(opts.font || 'helvetica', opts.style || 'normal');
+        doc.setFontSize(size);
+        doc.setTextColor(opts.color || this.colors.ink);
+        const step = size * 0.3528 * (opts.leading || 1.4);
+        const lines = this._wrap(doc, text, width);
+        lines.forEach((line, n) => doc.text(line, x, y + n * step));
+        return y + lines.length * step;
+    }
+
+    /** `count` writing rules from x1 to x2, the first one `step` below y. Returns the last rule's y. */
+    _rules(doc, L, x1, x2, y, count, step = L.rowH) {
+        let last = y;
+        for (let r = 1; r <= count; r++) {
+            last = y + r * step;
+            this._rule(doc, L, x1, x2, last);
+        }
+        return last;
+    }
+
+    /** A row of `count` square boxes for one digit each, from x with its top at y. */
+    _digitBoxes(doc, L, x, y, count, edge, color) {
+        this._setStroke(doc, color || this.colors.subtle, 0.25 * L.s);
+        for (let k = 0; k < count; k++) doc.rect(x + k * edge, y, edge, edge);
+    }
+
     /* ------------------------------------------------------------------ *
      *  Pages                                                              *
      * ------------------------------------------------------------------ */
 
-    /** Cover — drawn on the CURRENT page (a fresh document's first page). */
-    addCoverPage(doc, paperDimensions) {
+    /**
+     * Cover — drawn on the CURRENT page (a fresh document's first page).
+     * opts.pictures: picture ids (see the `art` option) to stand between
+     * the title and the year line; the layout is unchanged without them.
+     */
+    addCoverPage(doc, paperDimensions, opts = {}) {
         const L = this._layout(paperDimensions || this._paper);
         const F = this._fonts(L);
+        const pictures = (opts.pictures || []).filter((id) => this._hasPicture(id));
+        const top = pictures.length ? 0.12 : 0.34;
+        const yearY = pictures.length ? 0.745 : 0.62;
 
         // Delicate double frame.
         const o = L.margin * 0.55;
@@ -338,34 +432,39 @@ class BulletJournal {
         doc.rect(i, i, L.w - i * 2, L.h - i * 2);
 
         // Masthead.
-        this._kicker(doc, L, 'Bullet Journal', L.centerX, L.h * 0.34, 'center');
+        this._kicker(doc, L, 'Bullet Journal', L.centerX, L.h * top, 'center');
         this._setStroke(doc, this.colors.accent, 0.5 * L.s);
-        doc.line(L.centerX - 11 * L.s, L.h * 0.37, L.centerX + 11 * L.s, L.h * 0.37);
+        doc.line(L.centerX - 11 * L.s, L.h * (top + 0.03), L.centerX + 11 * L.s, L.h * (top + 0.03));
 
         // Title.
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(F.display);
         doc.setTextColor(this.colors.ink);
-        doc.text(this.title, L.centerX, L.h * 0.455, { align: 'center', maxWidth: L.contentW * 0.9 });
+        doc.text(this.title, L.centerX, L.h * (top + 0.115), { align: 'center', maxWidth: L.contentW * 0.9 });
 
         // Tagline.
         doc.setFont('times', 'italic');
         doc.setFontSize(F.body);
         doc.setTextColor(this.colors.subtle);
-        doc.text('An undated planner for intentional living', L.centerX, L.h * 0.52, { align: 'center' });
+        doc.text('An undated planner for intentional living', L.centerX, L.h * (top + 0.18), { align: 'center' });
 
-        if (this.owner) this._ownerName(doc, L, L.h * 0.575, L.contentW * 0.8);
+        if (this.owner) this._ownerName(doc, L, L.h * (top + 0.235), L.contentW * 0.8);
+
+        if (pictures.length) {
+            const pictureTop = L.h * (top + (this.owner ? 0.27 : 0.22));
+            this._pictureRow(doc, L, pictures, pictureTop, L.h * (yearY - 0.05), L.contentW * 0.8);
+        }
 
         // Year fill-in.
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(F.small);
-        doc.text('year', L.centerX, L.h * 0.62, { align: 'center' });
-        this._rule(doc, L, L.centerX - 12 * L.s, L.centerX + 12 * L.s, L.h * 0.655);
+        doc.text('year', L.centerX, L.h * yearY, { align: 'center' });
+        this._rule(doc, L, L.centerX - 12 * L.s, L.centerX + 12 * L.s, L.h * (yearY + 0.035));
 
         // Signature dots.
         doc.setFillColor(this.colors.accent);
         for (let d = -1; d <= 1; d++) {
-            doc.circle(L.centerX + d * 4 * L.s, L.h * 0.8, 0.55 * L.s, 'F');
+            doc.circle(L.centerX + d * 4 * L.s, L.h * (pictures.length ? 0.86 : 0.8), 0.55 * L.s, 'F');
         }
         this._coverFooter(doc, L);
     }
@@ -809,6 +908,10 @@ class BulletJournal {
         const L = this._layout(paperDimensions || this._paper);
         const F = this._fonts(L);
         const title = opts.title || this.title;
+        // With pictures the words move up and the pictures stand between
+        // the title and the name line; without, the layout is unchanged.
+        const pictures = (opts.pictures || []).filter((id) => this._hasPicture(id));
+        const top = pictures.length ? 0.12 : 0.3;
 
         const o = L.margin * 0.55;
         this._setStroke(doc, this.colors.accent, 0.5 * L.s);
@@ -818,10 +921,10 @@ class BulletJournal {
         doc.rect(i, i, L.w - i * 2, L.h - i * 2);
 
         if (opts.kicker !== '') {
-            this._kicker(doc, L, opts.kicker || 'Printable Journal', L.centerX, L.h * 0.3, 'center');
+            this._kicker(doc, L, opts.kicker || 'Printable Journal', L.centerX, L.h * top, 'center');
         }
         this._setStroke(doc, this.colors.accent, 0.5 * L.s);
-        doc.line(L.centerX - 11 * L.s, L.h * 0.33, L.centerX + 11 * L.s, L.h * 0.33);
+        doc.line(L.centerX - 11 * L.s, L.h * (top + 0.03), L.centerX + 11 * L.s, L.h * (top + 0.03));
 
         // Title, wrapped so a long one grows downwards instead of off the page.
         doc.setFont('helvetica', 'bold');
@@ -829,7 +932,7 @@ class BulletJournal {
         doc.setTextColor(this.colors.ink);
         const titleLines = this._wrap(doc, title, L.contentW * 0.85);
         const titleStep = F.display * 0.3528 * 1.15;
-        let y = L.h * 0.42;
+        let y = L.h * (top + 0.12);
         titleLines.forEach((line, n) => {
             doc.text(line, L.centerX, y + n * titleStep, { align: 'center' });
         });
@@ -845,10 +948,12 @@ class BulletJournal {
             subLines.forEach((line, n) => {
                 doc.text(line, L.centerX, y + n * subStep, { align: 'center' });
             });
+            y += (subLines.length - 1) * subStep;
         }
 
         // Owner's name.
-        const nameY = L.h * 0.68;
+        const nameY = L.h * (pictures.length ? 0.76 : 0.68);
+        if (pictures.length) this._pictureRow(doc, L, pictures, y + 6 * L.s, nameY - 9 * L.s, L.contentW * 0.84);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(F.body);
         doc.setTextColor(this.colors.ink);
@@ -1243,7 +1348,7 @@ class BulletJournal {
      * saving, which makes the library usable from Node services
      * (`doc.output('arraybuffer')`) as well as the browser.
      */
-    generate(paperSize, doc = null) {
+    generate(paperSize, doc = null, opts = {}) {
         const paperDimensions = PAPER_SIZES[paperSize];
         if (!paperDimensions) throw new Error('Unsupported paper size');
         this._paper = paperDimensions;
@@ -1253,7 +1358,7 @@ class BulletJournal {
         this.applyColors(target);
 
         // Static sections.
-        this.addCoverPage(target, paperDimensions);
+        this.addCoverPage(target, paperDimensions, { pictures: opts.coverPictures });
         this.addIndexPage(target, paperDimensions);
         this.addUndatedCalendarPages(target, paperDimensions);
         this.addTopMilestonesPage(target, paperDimensions);
@@ -1278,5 +1383,9 @@ class BulletJournal {
     }
 }
 
+// Activity pages for children and record pages for professional journals
+// live in src/pages/ and become methods here.
+Object.assign(BulletJournal.prototype, kidsPages, recordPages);
+
 export { BulletJournal, PAPER_SIZES, fitsStandardFonts, MAX_OWNER_CHARS };
-export { EDITIONS, buildEdition, EDITION_PAPERS } from './editions.js';
+export { EDITIONS, buildEdition, EDITION_PAPERS, COVER_PICTURES, usedPictures } from './editions.js';

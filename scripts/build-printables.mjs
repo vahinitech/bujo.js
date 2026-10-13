@@ -4,7 +4,8 @@
 //
 //   node scripts/build-printables.mjs [--footer "text"] [--out dir]
 //
-// The same source and options always give byte-identical PDFs.
+// The same source and options always give byte-identical PDFs. The
+// pictures come from art/ (see scripts/art.mjs).
 
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
@@ -13,7 +14,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { EDITIONS, buildEdition } from '../src/bujo.js';
+import { EDITIONS, buildEdition, usedPictures } from '../src/bujo.js';
+import { loadArt } from './art.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -62,10 +64,13 @@ function main() {
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
     mkdirSync(args.out, { recursive: true });
 
+    const { art } = loadArt();
     const files = [];
     for (const edition of EDITIONS) {
+        const missing = usedPictures(edition.id).filter((id) => !art[id]);
+        if (missing.length) throw new Error(`${edition.id}: art/ has no ${missing.join(', ')}`);
         for (const paper of edition.papers) {
-            const doc = buildEdition(edition.id, paper, { footer: args.footer });
+            const doc = buildEdition(edition.id, paper, { footer: args.footer, art });
             const pages = doc.getNumberOfPages();
             if (pages !== edition.pages) {
                 throw new Error(`${edition.id} ${paper}: built ${pages} pages, expected ${edition.pages}`);

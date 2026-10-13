@@ -1,5 +1,7 @@
 // Shared helpers for the tests that run against the real jsPDF.
 
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { PAPER_SIZES } from '../../src/bujo.js';
 
 export const FOOTER = 'Free handwriting check: vahinitech.com';
@@ -26,6 +28,7 @@ export function record(doc) {
     wrap('rect', (x, y, w, h) => ({ x1: x, x2: x + w, y1: y, y2: y + h }));
     wrap('roundedRect', (x, y, w, h) => ({ x1: x, x2: x + w, y1: y, y2: y + h }));
     wrap('circle', (x, y, r) => ({ x1: x - r, x2: x + r, y1: y - r, y2: y + r }));
+    wrap('addImage', (data, format, x, y, w, h, alias) => ({ x1: x, x2: x + w, y1: y, y2: y + h, alias }));
     wrap('text', (text, x, y, opts = {}) => {
         // Visible width: glyphs plus the letter spacing between them.
         const charSpace = doc.getCharSpace();
@@ -45,4 +48,16 @@ export function newDoc(journal, size) {
     journal._pageNo = 1;
     journal.applyColors(doc);
     return doc;
+}
+
+export const ART_DIR = resolve(__dirname, '..', '..', 'art');
+
+/** The pictures in art/ as the `art` option wants them, without checking digests. */
+export function loadTestArt() {
+    const spec = JSON.parse(readFileSync(join(ART_DIR, 'art.json'), 'utf8'));
+    const art = {};
+    spec.items.forEach((item) => {
+        art[item.id] = { data: new Uint8Array(readFileSync(join(ART_DIR, `${item.id}.png`))), width: item.width, height: item.height };
+    });
+    return { art, spec };
 }

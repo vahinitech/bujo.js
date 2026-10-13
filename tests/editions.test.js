@@ -62,7 +62,9 @@ describe('editions', () => {
             'handwriting-practice-pages',
             'student-study-planner',
             'habit-tracker',
-            'bullet-journal'
+            'bullet-journal',
+            'teacher-planner',
+            'advocate-case-diary'
         ]);
         EDITIONS.forEach((e) => {
             expect(e.title).toEqual(expect.any(String));
@@ -71,11 +73,13 @@ describe('editions', () => {
             expect(Number.isInteger(e.pages)).toBe(true);
         });
         expect(Object.fromEntries(EDITIONS.map((e) => [e.id, e.pages]))).toEqual({
-            'kids-handwriting-journal': 29,
+            'kids-handwriting-journal': 39,
             'handwriting-practice-pages': 11,
             'student-study-planner': 17,
             'habit-tracker': 13,
-            'bullet-journal': 66
+            'bullet-journal': 66,
+            'teacher-planner': 41,
+            'advocate-case-diary': 64
         });
     });
 

@@ -49,3 +49,23 @@ add or update tests in `tests/` alongside the code change.
   so call it out in the PR. Builds must stay deterministic: the same
   commit and options give byte-identical PDFs. Nothing here reaches the
   live site until vahini-web moves its pin.
+
+## Pictures from vahinitech/drawings
+
+- **`art/` is Vahini artwork, not MIT, and not on npm.** `package.json`
+  `files` stays `["src"]`; `art/NOTICE.md` says why. Never move a picture
+  into `src/` or inline one into code.
+- **Pictures come only from the drawings library, at the pin in
+  `art/art.json`.** `scripts/export_art.py <drawings checkout>` crops and
+  resizes; nothing else is allowed here. A new pose, expression, outfit,
+  recolouring or redrawn character needs the owner's approval with before
+  and after images, lands in drawings first, and is then pinned here. Never
+  pin an unmerged drawings commit.
+- **Every page works without pictures.** A page that names a picture keeps
+  the same writing space when `art` lacks it, so npm users get usable
+  pages. `tests/art.test.js` checks `art/` holds exactly what the editions
+  use (`usedPictures`), with the recorded digests.
+- **Weigh file size.** The pictures are most of a published PDF's bytes.
+  Keep `maxPx` in `art/art.json` as small as prints well, and give the
+  sizes in the PR.
+- To add an edition, follow `.claude/skills/new-edition/SKILL.md`.

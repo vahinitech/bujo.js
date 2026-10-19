@@ -24,6 +24,14 @@
   message, not files, and is cheap either way.
 - **No AI-isms** in docs, comments, or commit messages — plain, specific
   language only.
+- **Never write a malware-scanner signature in one piece.** The server's
+  nightly maldet scan reads home folders and `/tmp`, build output included.
+  Build a test payload at run time with a call (`[...].join('')`,
+  `Buffer.concat`), never `+` of two literals, which bundlers and minifiers
+  fold into one string; keep the joined form out of comments and docs; never
+  name a file like a web shell (`shell.php`). `tests/scanner-strings.test.js`
+  checks every tracked file. Full rule:
+  [scanner-strings](https://github.com/vahinitech/Umbrella/blob/main/skills/scanner-strings/SKILL.md).
 
 ## Commands
 

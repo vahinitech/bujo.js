@@ -1,0 +1,229 @@
+{
+  "about": "Pictures for the printable editions, exported from vahinitech/drawings by scripts/export_art.py. Vahini artwork, not covered by this repository's MIT licence: see art/NOTICE.md.",
+  "source": {
+    "repository": "https://github.com/vahinitech/drawings",
+    "commit": "76d3c06a78deeba5a1409584569402c1ad682a51",
+    "collections": [
+      {
+        "path": "illustrations/paper-cut-v1",
+        "inventorySha256": "6f7dbe742778ec8a5ea4053d7a1d40719333921a17cc9fc82a37244359e70c20"
+      },
+      {
+        "path": "illustrations/story-cast-v1",
+        "inventorySha256": "168b48e74befe1282650204b84eae9d0ad64dc4c081458aeb9882f5c69170230"
+      },
+      {
+        "path": "illustrations/usecase/classroom/v1",
+        "inventorySha256": "ce96ce611cc64b4b03d844c2c7f2964a43607973909858e4f6d9d340581d665e"
+      },
+      {
+        "path": "illustrations/usecase/courtroom/v1",
+        "inventorySha256": "f5a71e9c51e9da0b9acc5aafbb530f012e5c0970ad6b7f085cddfc2d425bfa70"
+      },
+      {
+        "path": "illustrations/usecase/assessment/v1",
+        "inventorySha256": "342f360bbfcc76fc589eb2db88621a2303b9f9cf049fa98037ba56417d5715ca"
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "role_student",
+      "maxPx": 560,
+      "master": "illustrations/paper-cut-v1/people/role_student.png",
+      "masterSha256": "d739f1fe037d0c94234adca3e181b6a8aa485f9afd1152b77f143fa63c40d6d9",
+      "width": 192,
+      "height": 560,
+      "sha256": "f8953769d0c4f537bd6e357ac60638d259eb667fcb0413f1ec44778c17b159ab"
+    },
+    {
+      "id": "mascot_practice",
+      "maxPx": 560,
+      "master": "illustrations/paper-cut-v1/mascots/mascot_practice.png",
+      "masterSha256": "ec2b60d13530135bfe3e97ca2ea8318bac758a7f20bec1a9adffe36811d1cb75",
+      "width": 540,
+      "height": 560,
+      "sha256": "282b27c20bc8f85dfbbd0a59c36646c715e98c3e69f97c299ea837cfd7927739"
+    },
+    {
+      "id": "pihu_notice",
+      "maxPx": 380,
+      "master": "illustrations/story-cast-v1/pihu_notice.png",
+      "masterSha256": "83ee9980c656559a7e9b7d3e37892192a6d674939d98855627d0f3116d2146aa",
+      "width": 348,
+      "height": 380,
+      "sha256": "bc8b389960e37e23fd3efc9bda3f6f1723edfca14dc6820e3087643c492852ab"
+    },
+    {
+      "id": "rama_explore",
+      "maxPx": 380,
+      "master": "illustrations/story-cast-v1/rama_explore.png",
+      "masterSha256": "880c21e55567aa374b6227bca917e4d5fabb46847cb24989e95cee55e03b6012",
+      "width": 200,
+      "height": 380,
+      "sha256": "9c0afd8ebcf5b5f5a9e27051847dfc6aa5ffb95a1246623457c09cd2f75d8865"
+    },
+    {
+      "id": "chinnu_try",
+      "maxPx": 380,
+      "master": "illustrations/story-cast-v1/chinnu_try.png",
+      "masterSha256": "d1040030b59f6e768d774c55658bc8f6e0c0fc2c7d8096a7cfa841db106e8088",
+      "width": 315,
+      "height": 380,
+      "sha256": "a0abf49e481973bcc84c73ed5be7acacd893012e984a49c33e68e26bc9bcec8c"
+    },
+    {
+      "id": "sprout",
+      "maxPx": 380,
+      "master": "illustrations/paper-cut-v1/accents/sprout.png",
+      "masterSha256": "292e9d537c19725518de5fd3cc4d0fd91a5475c395274afc9d968930fdac9bec",
+      "width": 363,
+      "height": 380,
+      "sha256": "1f986417986fd61d7346ec4565a5ff9a3258eae0f3660aeedfb04928e73570c4"
+    },
+    {
+      "id": "feature_mindmap",
+      "maxPx": 380,
+      "master": "illustrations/paper-cut-v1/features/feature_mindmap.png",
+      "masterSha256": "56d32a3813806bfce7fe5e19ece55ba84e28eb2c53aa8c737a2e4cae6e6c4889",
+      "width": 377,
+      "height": 380,
+      "sha256": "c793ce25163e4287fdff8ae991af8abee6c6ee771cfcd248782ae738b265c99a"
+    },
+    {
+      "id": "mascot_curious",
+      "maxPx": 380,
+      "master": "illustrations/paper-cut-v1/mascots/mascot_curious.png",
+      "masterSha256": "67bb3538b56023886909dd216bdd4c60d943582e558083308da6d1ff1a648c2c",
+      "width": 360,
+      "height": 380,
+      "sha256": "331f757b37938d9012fd56dec5c016f4bc589d313c69d08bd5e3865a6c57474b"
+    },
+    {
+      "id": "cover_art",
+      "maxPx": 380,
+      "master": "illustrations/paper-cut-v1/covers/cover_art.png",
+      "masterSha256": "0c5a3a99e44d5b3ed53a7563adb42676321dc165d61bcb6deb25162fbd08363e",
+      "width": 282,
+      "height": 380,
+      "sha256": "7647dcf703fb5706cd251d2be0fa0dbc53165f2c9861b46dfaf8950d845e5d8f"
+    },
+    {
+      "id": "mascot_welcome",
+      "maxPx": 380,
+      "master": "illustrations/paper-cut-v1/mascots/mascot_welcome.png",
+      "masterSha256": "5f4d01af3363097ac509117071ce24e27fb517195b12a9ab8201d1ac4e26fe6e",
+      "width": 325,
+      "height": 380,
+      "sha256": "60b657615337a9c660ec9be808106424c5b85beb97a006e575791919511d3fd5"
+    },
+    {
+      "id": "mascot_success",
+      "maxPx": 380,
+      "master": "illustrations/paper-cut-v1/mascots/mascot_success.png",
+      "masterSha256": "a44a5e720609305f04b53d40bb68e2cb7b1c3f383a3dd5080a69886a37119397",
+      "width": 380,
+      "height": 346,
+      "sha256": "b87f2188a2adffae68525818b039d2b7c932dc95833b4f42197df7238850706e"
+    },
+    {
+      "id": "feature_handwriting",
+      "maxPx": 560,
+      "master": "illustrations/paper-cut-v1/features/feature_handwriting.png",
+      "masterSha256": "7f0b5ced082b90c8cc4632fd6b84d22b10b0b058941c84837913d48d50c80784",
+      "width": 457,
+      "height": 560,
+      "sha256": "a99e91806ff271fb311219a77bc1c60fadc297ab82cd576c8e923baca160b089"
+    },
+    {
+      "id": "feature_week",
+      "maxPx": 560,
+      "master": "illustrations/paper-cut-v1/features/feature_week.png",
+      "masterSha256": "f502e27206c4f4ebf1bc59b2c3615a64f18d504600f29c74222f876fb64c5677",
+      "width": 560,
+      "height": 365,
+      "sha256": "a686feefb6f9efaa43a4b497ff010529706fb7846112b01b92d3e1ad7efe0209"
+    },
+    {
+      "id": "tara_pause",
+      "maxPx": 560,
+      "master": "illustrations/story-cast-v1/tara_pause.png",
+      "masterSha256": "dc6c7b056f0a79cde746b67dd3885fdcd336f908e34a4ad48bf24acc129f1d9f",
+      "width": 560,
+      "height": 470,
+      "sha256": "8fa6084bac26ab199ae1dff76c28fd8a92b05f7c6f3631f118046e43e9a64fe8"
+    },
+    {
+      "id": "feature_write",
+      "maxPx": 560,
+      "master": "illustrations/paper-cut-v1/features/feature_write.png",
+      "masterSha256": "1a6cd22bdff3e792a6141553ad02fe5d32e64800bc19a61334038a505a6d52a4",
+      "width": 551,
+      "height": 560,
+      "sha256": "130ded9ab9890c13ddcfb8b3d743d263b72997756776d5c321f10675df60b99d"
+    },
+    {
+      "id": "role_teacher",
+      "maxPx": 560,
+      "master": "illustrations/paper-cut-v1/people/role_teacher.png",
+      "masterSha256": "96c49641cbb209894b3432b08058583fd03569248c3610a15de83a5022be745a",
+      "width": 445,
+      "height": 560,
+      "sha256": "4f7f47278df73c7af892e52c7cf140318b0bbb20d50383dc80dec630b728a0d4"
+    },
+    {
+      "id": "classroom_teacher_hint",
+      "maxPx": 520,
+      "master": "illustrations/usecase/classroom/v1/classroom_teacher_hint.png",
+      "masterSha256": "58e7898c67b6b5d27965a311e2097dd30aea905741537207a256e27360885fd9",
+      "width": 517,
+      "height": 520,
+      "sha256": "a43d8d60491cfa0767a91dd6fd7e0de6e1feebd27ebcfdfc123c048f404cd109"
+    },
+    {
+      "id": "assessment_mark_paper",
+      "maxPx": 520,
+      "master": "illustrations/usecase/assessment/v1/assessment_mark_paper.png",
+      "masterSha256": "dea11e481b5033c46ce576ff1b42a68b76ff04e394cb2f2d3724995b89f81c73",
+      "width": 376,
+      "height": 520,
+      "sha256": "5a7774ca799488212c6ad8864a9f1cedf533a3791a4cf73b8d7ad45dc83d4399"
+    },
+    {
+      "id": "assessment_plan_support",
+      "maxPx": 520,
+      "master": "illustrations/usecase/assessment/v1/assessment_plan_support.png",
+      "masterSha256": "3fcea3972cbcb52c6cca0a9a2d5ed8eba3837e19f5202d0dd2c16da82909fa6c",
+      "width": 520,
+      "height": 511,
+      "sha256": "7af6f1cc4553cdb9536a7936bc85bdc65097185ce7236d25c6006d660418beed"
+    },
+    {
+      "id": "courtroom_note",
+      "maxPx": 560,
+      "master": "illustrations/usecase/courtroom/v1/courtroom_note.png",
+      "masterSha256": "52352aa597e98f4082ab22a0bd3431851e7041f809b94ac9fd39661f25fd9708",
+      "width": 560,
+      "height": 510,
+      "sha256": "f50d8d50ef79112ab275b071f2d7833620d5aa82b1bb3e6ea4b890c4a38bf921"
+    },
+    {
+      "id": "courtroom_find_note",
+      "maxPx": 520,
+      "master": "illustrations/usecase/courtroom/v1/courtroom_find_note.png",
+      "masterSha256": "ce0223a3fa166cac846c478039647f706760442116b1156863a730e90fb4adc9",
+      "width": 520,
+      "height": 461,
+      "sha256": "521e2e471b511a59649167305e543746eb3adcf4597600cc2204238929a4784b"
+    },
+    {
+      "id": "courtroom_review_note",
+      "maxPx": 520,
+      "master": "illustrations/usecase/courtroom/v1/courtroom_review_note.png",
+      "masterSha256": "4a0586b2098446682cb19b4ca5c5890199234b002aa03c0f826e6f205d16e695",
+      "width": 520,
+      "height": 459,
+      "sha256": "eef5ceb6d16d2a559c6fae787830707a4638a50bb4af19830ffad9134a7db00e"
+    }
+  ]
+}

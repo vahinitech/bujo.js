@@ -20,7 +20,10 @@ The layout engine is fully metric (millimetres) and scale-aware: every page — 
 - **Habit Tracker**: A 31-day × 8-habit matrix with goal-setting and flexible tracking space.
 - **Handwriting Practice**: Four-line copybook ruling with a shaded middle band, as used in Indian schools.
 - **Pages for Children and Students**: Reading log, weekly study planner, 30-day practice tracker and a name cover.
-- **Printable Editions**: Five ready-made books and a build script that writes them, with a manifest, as byte-identical PDFs.
+- **Activity Pages for Children**: All about me, a phone number to learn, the way home, experiments, ideas, everyday tricks, drawing and colour mixing. Each one asks the child to write.
+- **Record Pages**: Ruled tables, attendance and marks registers, a timetable, a weekly lesson plan, notes on each child, case notes, section dividers.
+- **Pictures**: An `art` option draws Vahini's illustrations on covers and pages, and every page also works without them.
+- **Printable Editions**: Seven ready-made books, including a teacher's planner and an advocate's case diary, and a build script that writes them, with a manifest, as byte-identical PDFs.
 - **Color Schemes**: A refined `color` palette (slate ink, muted petrol accent) and a `monochrome` palette.
 - **Browser and Node**: `createBulletJournalBook()` saves a download in the browser; `generate()` returns the jsPDF document so services can stream it (`doc.output('arraybuffer')`).
 
@@ -163,7 +166,7 @@ The built-in PDF fonts only draw Latin-1 text, so a name in another script (Telu
 
 ## Printable Editions
 
-`EDITIONS` lists ready-made books and `buildEdition(id, paperSize, options)` builds one and returns the jsPDF document. `options` takes `footer`, `colorScheme` (default `color`) and `owner`.
+`EDITIONS` lists ready-made books and `buildEdition(id, paperSize, options)` builds one and returns the jsPDF document. `options` takes `footer`, `colorScheme` (default `color`), `owner` and `art` (see [Pictures](#pictures)).
 
 ```javascript
 import { EDITIONS, buildEdition } from 'bujo.js';
@@ -176,15 +179,31 @@ const pdf = Buffer.from(doc.output('arraybuffer'));
 
 | id | Title | Pages | Contents |
 |----|-------|-------|----------|
-| `kids-handwriting-journal` | My Handwriting Journal | 29 | Name cover, how to use, practice tracker, 24 practice pages, 2 reading logs |
+| `kids-handwriting-journal` | My Handwriting Journal | 39 | Name cover, how to use, all about me, phone number to learn, my way home, practice tracker, 16 practice pages each followed by an activity (4 experiments, 3 idea pages, 2 trick pages, 4 drawing pages, colour mixing), 2 reading logs, a finishing page |
 | `handwriting-practice-pages` | Handwriting Practice Pages | 11 | Name cover, 10 practice pages |
 | `student-study-planner` | Student Study Planner | 17 | Name cover, 12 weekly planners, 2 habit trackers, 2 reading logs |
 | `habit-tracker` | Habit Tracker | 13 | Cover, 12 undated monthly habit trackers |
 | `bullet-journal` | Bullet Journal | 66 | The full book from `generate()` |
+| `teacher-planner` | Teacher's Planner | 41 | Name cover, how to use, year at a glance, timetable, 14 lesson plans, 5 monthly attendance registers, 2 marks registers, 10 pages of notes on each child, 2 parent meeting logs, an end-of-term page, with section dividers |
+| `advocate-case-diary` | Advocate's Case Diary | 64 | Name cover, how to use, 2 case index pages, year at a glance, 20 hearing diary pages, 30 case note pages, 3 client meeting logs, 4 dot grid pages, with section dividers |
 
 Each entry has `id`, `title`, `description` (one sentence), `pages` (the exact count on every paper) and `papers` (`['A4', 'A5']`). The page counts are checked by the tests.
 
-Editions are reproducible: they get a fixed creation date, a file id derived from the edition, paper, footer, colour scheme and owner name, and fixed document properties, so the same input always gives the same bytes.
+Editions are reproducible: they get a fixed creation date, a file id derived from the edition, paper, footer, colour scheme, owner name and whether pictures are drawn, and fixed document properties, so the same input always gives the same bytes.
+
+The printed words of the editions live in `src/editionText.js`.
+
+### Pictures
+
+The published editions carry illustrations from [vahinitech/drawings](https://github.com/vahinitech/drawings), the library that holds every Vahini character. Pass them as `art`, a map from picture id to `{ data, width, height }` where `data` is the PNG's bytes:
+
+```javascript
+const doc = buildEdition('teacher-planner', 'A4', { art: { role_teacher: { data, width, height } } });
+```
+
+A page draws a picture only when its id is in `art`; otherwise it keeps the same writing space and leaves the picture out. `usedPictures(id)` lists the ids an edition asks for, and `COVER_PICTURES` the ones on each cover.
+
+The pictures themselves are in `art/`, which is **not** in the npm package and **not** under the MIT licence: see [art/NOTICE.md](art/NOTICE.md). `art/art.json` pins the drawings commit and records where each picture came from; `scripts/export_art.py` (Python 3 with Pillow) writes them from a checkout of drawings at that commit, and `--check` confirms nothing changed.
 
 ### Build Script
 
@@ -206,18 +225,18 @@ It writes every edition on A4 and A5 to `dist/printables/<id>-<paper>.pdf` (for 
     {
       "id": "kids-handwriting-journal",
       "title": "My Handwriting Journal",
-      "description": "A month of daily handwriting practice for children, with a practice tracker and a reading log.",
+      "description": "A month of daily handwriting practice for children, with experiments, ideas, clever tricks, pages to draw and paint, the way home and a family phone number to learn.",
       "paper": "A4",
-      "pages": 29,
+      "pages": 39,
       "file": "kids-handwriting-journal-a4.pdf",
-      "bytes": 64679,
+      "bytes": 2090475,
       "sha256": "<hex>"
     }
   ]
 }
 ```
 
-`footer` is `null` when `--footer` is not given. `--out` writes somewhere other than `dist/printables`. The script stops if a built file does not have the page count its edition declares. It needs no network.
+`footer` is `null` when `--footer` is not given. `--out` writes somewhere other than `dist/printables`. The script draws the pictures in `art/`, and stops if an edition names a picture that `art/` does not have, if a picture does not match its recorded digest, or if a built file does not have the page count its edition declares. It needs no network.
 
 ## Demo
 
@@ -235,7 +254,7 @@ npm test
 npm run lint
 ```
 
-The page and edition tests run against the real jsPDF: they check that every drawing stays inside the content area from A6 to A3, that the footer is on every page and clear of everything else, the page count of every edition, and that two runs of the build script give byte-identical files.
+The page and edition tests run against the real jsPDF: they check that every drawing and picture stays inside the content area from A6 to A3, that the footer is on every page and clear of everything else, the page count of every edition with and without pictures, that `art/` holds exactly the pictures the editions use with their recorded digests, and that two runs of the build script give byte-identical files.
 
 ## Dependencies
 

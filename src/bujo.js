@@ -703,17 +703,22 @@ class BulletJournal {
     /** Classic 5 mm bullet-journal dot grid across the whole content area. */
     addDottedGridPage(doc, dotSpacing = 5, paperDimensions) {
         if (!doc) throw new Error('Invalid document instance');
-        if (!(dotSpacing > 0)) throw new Error('Invalid dot spacing');
+        if (!Number.isFinite(dotSpacing) || dotSpacing <= 0) throw new Error('Invalid dot spacing');
         if (!paperDimensions && !this._paper) throw new Error('Invalid paper dimensions');
         if (arguments.length >= 3 && !paperDimensions) throw new Error('Invalid paper dimensions');
 
-        this._newPage(doc);
         const L = this._layout(paperDimensions || this._paper);
+        if (!Number.isFinite(L.w) || !Number.isFinite(L.h) || L.w <= 0 || L.h <= 0) {
+            throw new Error('Invalid paper dimensions');
+        }
         const spacing = dotSpacing < 1 ? dotSpacing * 25.4 : dotSpacing; // legacy inch input
 
         // Centre the grid inside the content area.
         const nx = Math.max(1, Math.floor(L.contentW / spacing) + 1);
         const ny = Math.max(1, Math.floor((L.contentH - 4 * L.s) / spacing) + 1);
+        // Bound work before adding a page, including near-zero spacing.
+        if (!Number.isSafeInteger(nx * ny) || nx * ny > 100000) throw new Error('Invalid dot spacing');
+        this._newPage(doc);
         const x0 = L.margin + (L.contentW - (nx - 1) * spacing) / 2;
         const y0 = L.margin + (L.contentH - 4 * L.s - (ny - 1) * spacing) / 2;
         doc.setFillColor(this.colors.faint);
@@ -1331,16 +1336,36 @@ class BulletJournal {
         return coverPageCount + indexPageCount + futureLogPages + milestonesPages + helicopterPageCount + monthlyPages;
     }
 
+    /** Standard PDF properties survive file renames; they are not usage telemetry. */
+    _setMetadata(doc, paperSize, { edition = 'custom', description = 'Printable journal', sourceRevision = null } = {}) {
+        if (typeof doc.setProperties !== 'function') return;
+        const documentId = 'vh-' + doc.getFileId().toLowerCase();
+        doc.setProperties({
+            title: this.title,
+            author: 'Vahini Technologies',
+            subject: description,
+            creator: 'Vahini Technologies | bujo.js',
+            keywords: [
+                'printable', 'journal', 'planner', 'Vahini Technologies', 'https://vahinitech.com',
+                'metadata=vahini-pdf-v1', 'document-id=' + documentId,
+                'edition=' + edition, 'paper=' + paperSize,
+                'source-revision=' + (sourceRevision || 'unknown')
+            ].join(', ')
+        });
+    }
+
     /** Creates a jsPDF document with the correct physical page size. */
     createDocument(paperSize) {
         const paperDimensions = PAPER_SIZES[paperSize];
-        if (!paperDimensions) throw new Error('Unsupported paper size');
-        return new jsPDF({
+        if (!Object.hasOwn(PAPER_SIZES, paperSize)) throw new Error('Unsupported paper size');
+        const doc = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
             format: [paperDimensions.width, paperDimensions.height],
             compress: true
         });
+        this._setMetadata(doc, paperSize);
+        return doc;
     }
 
     /**
@@ -1350,10 +1375,11 @@ class BulletJournal {
      */
     generate(paperSize, doc = null, opts = {}) {
         const paperDimensions = PAPER_SIZES[paperSize];
-        if (!paperDimensions) throw new Error('Unsupported paper size');
+        if (!Object.hasOwn(PAPER_SIZES, paperSize)) throw new Error('Unsupported paper size');
         this._paper = paperDimensions;
         this._pageNo = 1;
         const target = doc || this.createDocument(paperSize);
+        if (doc) this._setMetadata(target, paperSize);
 
         this.applyColors(target);
 
@@ -1377,7 +1403,7 @@ class BulletJournal {
     /** Generates the journal and saves it (browser download / file). */
     createBulletJournalBook(paperSize, doc = null) {
         const target = this.generate(paperSize, doc);
-        const filename = `${this.title.replace(/\s+/g, '_').toLowerCase()}_journal_book.pdf`;
+        const filename = `${this.title.replace(/[<>:"/\\|?*\p{Cc}]/gu, '_').replace(/\s+/g, '_').toLowerCase()}_journal_book.pdf`;
         target.save(filename);
         return target;
     }

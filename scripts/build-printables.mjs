@@ -25,7 +25,7 @@ function parseArgs(argv) {
         const arg = argv[i];
         if (arg === '--footer' || arg === '--out') {
             const value = argv[i + 1];
-            if (value === undefined) throw new Error(`${arg} needs a value`);
+            if (value === undefined || value.startsWith('--') || value === '-h') throw new Error(`${arg} needs a value`);
             if (arg === '--footer') args.footer = value.trim() || null;
             else args.out = resolve(value);
             i++;
@@ -65,12 +65,13 @@ function main() {
     mkdirSync(args.out, { recursive: true });
 
     const { art } = loadArt();
+    const commit = gitCommit();
     const files = [];
     for (const edition of EDITIONS) {
         const missing = usedPictures(edition.id).filter((id) => !art[id]);
         if (missing.length) throw new Error(`${edition.id}: art/ has no ${missing.join(', ')}`);
         for (const paper of edition.papers) {
-            const doc = buildEdition(edition.id, paper, { footer: args.footer, art });
+            const doc = buildEdition(edition.id, paper, { footer: args.footer, art, sourceRevision: commit });
             const pages = doc.getNumberOfPages();
             if (pages !== edition.pages) {
                 throw new Error(`${edition.id} ${paper}: built ${pages} pages, expected ${edition.pages}`);
@@ -95,7 +96,7 @@ function main() {
     const manifest = {
         generator: 'bujo.js',
         version: pkg.version,
-        commit: gitCommit(),
+        commit,
         footer: args.footer,
         files
     };

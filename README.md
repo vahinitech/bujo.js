@@ -275,3 +275,35 @@ This project follows [Semantic Versioning (SemVer)](https://semver.org/) via `se
 3. Commit changes (`git commit -m 'feat: add new feature'`).
 4. Push to the branch (`git push origin feature/YourFeature`).
 5. Open a Pull Request.
+
+## Vahini PDF metadata
+
+Every document created by the library carries standard PDF properties: author
+`Vahini Technologies`, creator `Vahini Technologies | bujo.js`, title, subject
+and keywords containing the website, metadata schema, document ID, edition,
+paper size and source revision. These fields are visible in a PDF reader's
+document properties and remain with the file when it is renamed.
+
+`buildEdition(id, paper, { sourceRevision })` accepts an optional lowercase
+40-character Git commit SHA. The printable build script supplies its checkout's
+HEAD revision and records that same value in the existing manifest. Build release
+files from a clean checkout. If the revision is unavailable, metadata says
+`unknown`; no revision is invented.
+
+An edition's ID is deterministic for its edition, paper, footer, colour scheme,
+normalised cover name, presence of artwork and supplied revision. It identifies that configuration,
+not a customer or download. Custom documents use jsPDF's generated file ID.
+Keep each release's manifest: its SHA-256 identifies the exact PDF bytes. The
+short document ID is a lookup aid, not a cryptographic authenticity check.
+
+The cover name is not copied into metadata text. Do not put customer details or
+access keys in revision fields. A name already selected for a cover remains
+visible on that cover.
+
+This is offline attribution, not telemetry or DRM. It cannot report who opens,
+prints or shares a file, and PDF editors can remove or change it. No tracking
+requests, visible watermark or new page content are added. Existing downloaded
+PDFs need regeneration to receive these properties. Metadata changes alter file
+hashes, but page counts, layouts, filenames and manifest fields stay the same.
+The fixed creation date used by editions is for reproducible builds and is not
+a claimed download or release date.

@@ -329,7 +329,7 @@ function stableFileId(text) {
 
 /**
  * Builds one edition and returns the jsPDF document (nothing is saved).
- * options: { footer, colorScheme, owner, art }. `owner` prints a name on
+ * options: { footer, colorScheme, owner, art, sourceRevision }. `owner` prints a name on
  * the cover. `art` gives the pictures by id (see BulletJournal); the
  * published editions are built with the pictures in art/, and without
  * them every page keeps its writing space and leaves the picture out.
@@ -338,7 +338,12 @@ function buildEdition(id, paperSize, options = {}) {
     const edition = EDITIONS.find((e) => e.id === id);
     if (!edition) throw new Error(`Unknown edition: ${id}`);
     const paper = PAPER_SIZES[paperSize];
-    if (!paper) throw new Error('Unsupported paper size');
+    if (!Object.hasOwn(PAPER_SIZES, paperSize)) throw new Error('Unsupported paper size');
+
+    const sourceRevision = options.sourceRevision ?? null;
+    if (sourceRevision !== null && (typeof sourceRevision !== 'string' || !/^[0-9a-f]{40}$/.test(sourceRevision))) {
+        throw new Error('sourceRevision must be a lowercase 40-character Git commit SHA');
+    }
 
     const journal = new BulletJournal(edition.title, options.colorScheme || 'color', {
         footer: options.footer,
@@ -358,20 +363,13 @@ function buildEdition(id, paperSize, options = {}) {
 
     if (typeof doc.setCreationDate === 'function') doc.setCreationDate(FIXED_CREATION_DATE);
     if (typeof doc.setFileId === 'function') {
-        // The owner and the pictures join the id only when set, so plain
-        // editions keep their ids.
+        // Include artwork presence and the known revision in the edition ID.
         const owner = journal.owner ? `|${journal.owner}` : '';
         const art = Object.keys(journal.art).length ? '|art' : '';
-        doc.setFileId(stableFileId(`${id}|${paperSize}|${journal.footerText || ''}|${journal.colorScheme}${owner}${art}`));
+        const revision = sourceRevision ? `|${sourceRevision}` : '';
+        doc.setFileId(stableFileId(`${id}|${paperSize}|${journal.footerText || ''}|${journal.colorScheme}${owner}${art}${revision}`));
     }
-    if (typeof doc.setProperties === 'function') {
-        doc.setProperties({
-            title: edition.title,
-            subject: edition.description,
-            creator: 'bujo.js',
-            keywords: 'printable, journal, planner'
-        });
-    }
+    journal._setMetadata(doc, paperSize, { edition: id, description: edition.description, sourceRevision });
     return doc;
 }
 

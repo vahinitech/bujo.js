@@ -146,6 +146,8 @@ describe('build-printables script', () => {
             expect(entry.pages).toBe(edition.pages);
             expect(entry.file).toBe(`${entry.id}-${entry.paper.toLowerCase()}.pdf`);
             const bytes = readFileSync(join(first, entry.file));
+            expect(bytes.toString('latin1')).toContain('/Author (Vahini Technologies)');
+            expect(bytes.toString('latin1')).toContain(`edition=${entry.id}, paper=${entry.paper}, source-revision=${manifest.commit || 'unknown'}`);
             expect(entry.bytes).toBe(bytes.length);
             expect(entry.sha256).toBe(createHash('sha256').update(bytes).digest('hex'));
             // Second build: byte-identical.
@@ -158,6 +160,10 @@ describe('build-printables script', () => {
         const out = build();
         const manifest = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8'));
         expect(manifest.footer).toBeNull();
+    });
+
+    test('rejects an option used as a missing footer value', () => {
+        expect(() => build('--footer', '--help')).toThrow();
     });
 
     test('rejects unknown arguments', () => {
